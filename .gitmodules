@@ -1,0 +1,6 @@
+[submodule "M480BSP"]
+	path = M480BSP
+	url = https://github.com/OpenNuvoton/M480BSP.git
+[submodule "micropython"]
+	path = micropython
+	url = https://github.com/micropython/micropython.git
