@@ -1,2 +1,0 @@
-build-NuMaker-PFM-M487/hal/M48x_EADC.o: hal/M48x_EADC.c
-hal/M48x_EADC.c :
