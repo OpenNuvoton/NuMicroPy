@@ -1,0 +1,6 @@
+Q(read)
+Q(ADC)
+Q(read_channel)
+Q(read_core_temp)
+Q(read_core_vbat)
+Q(ADCAll)
