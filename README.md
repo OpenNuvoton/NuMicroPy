@@ -4,13 +4,14 @@ NuMicroPy is Nuvoton microcontroller porting for MicroPython. MicroPython is a l
 ----
 ## Major components in this repository
 - M480BSP/ -- NuMicro M480 series BSP
+- build/ -- Prebuilt frimware
 - patch/ -- BSP/MicroPython patch files
 - M48x/ -- M480 series porting of MicroPython
 - micropython/ -- MicroPython official release(v1.10)
 
 ----
 ## Supported target
-Board            |CPU      |ROM size  |RAM size
+Board            |MCU      |ROM size  |RAM size
 :----------------|---------|----------|-------
 NuMaker-PFM-M487 |M487     |315kB     |76kB
 
