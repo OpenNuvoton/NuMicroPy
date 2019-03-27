@@ -74,6 +74,7 @@
 #include "mods/pybtimer.h"
 #include "mods/pybuart.h"
 #include "mods/pybcan.h"
+#include "mods/pybpwm.h"
 #include "hal/pin_int.h"
 #include "hal/M48x_I2C.h"
 #include "hal/M48x_SPI.h"
@@ -684,4 +685,94 @@ void USBD_IRQHandler(void)
 	Handle_USBDEV_Irq(u32IntStatus, u32BusState);
 	IRQ_EXIT(USBD_IRQn);
 }
+
+volatile uint32_t g_ECC_done, g_ECCERR_done;
+volatile int  g_Crypto_Int_done = 0;
+
+void CRYPTO_IRQHandler()
+{
+	IRQ_ENTER(CRPT_IRQn);
+
+    if (TDES_GET_INT_FLAG(CRPT))
+    {
+        g_Crypto_Int_done = 1;
+        TDES_CLR_INT_FLAG(CRPT);
+    }
+
+    if (AES_GET_INT_FLAG(CRPT))
+    {
+        g_Crypto_Int_done = 1;
+        AES_CLR_INT_FLAG(CRPT);
+    }
+
+    if (SHA_GET_INT_FLAG(CRPT))
+    {
+        g_Crypto_Int_done = 1;
+        SHA_CLR_INT_FLAG(CRPT);
+    }
+
+	ECC_Complete(CRPT);
+	
+	IRQ_EXIT(CRPT_IRQn);
+}
+
+void BPWM0_IRQHandler(void)
+{
+
+	IRQ_ENTER(BPWM0_IRQn);
+	Handle_PWM_Irq(0);
+	IRQ_EXIT(BPWM0_IRQn);
+}
+
+void BPWM1_IRQHandler(void)
+{
+
+	IRQ_ENTER(BPWM1_IRQn);
+	Handle_PWM_Irq(1);
+	IRQ_EXIT(BPWM1_IRQn);
+}
+
+void EPWM0P0_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM0P0_IRQn);
+	Handle_EPWM_Irq(0, 0);
+	IRQ_EXIT(EPWM0P0_IRQn);
+}
+
+void EPWM0P1_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM0P1_IRQn);
+	Handle_EPWM_Irq(0, 1);
+	IRQ_EXIT(EPWM0P1_IRQn);
+}
+
+void EPWM0P2_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM0P2_IRQn);
+	Handle_EPWM_Irq(0, 2);
+	IRQ_EXIT(EPWM0P2_IRQn);
+}
+
+void EPWM1P0_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM1P0_IRQn);
+	Handle_EPWM_Irq(1, 0);
+	IRQ_EXIT(EPWM1P0_IRQn);
+}
+
+void EPWM1P1_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM1P1_IRQn);
+	Handle_EPWM_Irq(1, 1);
+	IRQ_EXIT(EPWM1P1_IRQn);
+}
+
+void EPWM1P2_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM1P2_IRQn);
+	Handle_EPWM_Irq(1, 2);
+	IRQ_EXIT(EPWM1P2_IRQn);
+}
+
+
 

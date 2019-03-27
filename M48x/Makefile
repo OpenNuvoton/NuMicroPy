@@ -21,21 +21,29 @@ include boards/$(BOARD)/mpconfigboard.mk
 
 CROSS = 1
 
+M48XBSP_LIB = $(M480_BSP_PATH)/Library
+M48XBSP_THIRD_PARTY = $(M480_BSP_PATH)/ThirdParty
+STARTUP_FILE = $(M48XBSP_LIB)/Device/Nuvoton/M480/Source/GCC/startup_M480.o
+
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h $(BUILD)/pins_qstr.h
 
 # include py core make definitions
 include $(TOP)/py/py.mk
 
+ifeq ($(MICROPY_SSL_NVT_MBEDTLS),1)
+SSL_MBEDTLS_INCLUDE = $(TOP)/$(M48XBSP_THIRD_PARTY)/mbedtls-2.13.0/include
+CFLAGS_MOD += -DMICROPY_SSL_MBEDTLS=1 -DMICROPY_PY_USSL=1 -DMICROPY_PY_UCRYPTOLIB=1 -I$(SSL_MBEDTLS_INCLUDE)
+endif
+
+ifeq ($(MICROPY_SSL_NVT_AXTLS),1)
+SSL_AXTLS_INCLUDE = lib/axtls
+CFLAGS_MOD += -DMICROPY_SSL_AXTLS=1 -DMICROPY_PY_USSL=1 -DMICROPY_PY_UCRYPTOLIB=1 -I$(SSL_AXTLS_INCLUDE)/ssl -I$(SSL_AXTLS_INCLUDE)/crypto -I$(TOP)/extmod/axtls-include
+endif
+
 ifeq ($(CROSS), 1)
 CROSS_COMPILE = arm-none-eabi-
 endif
-
-M48XBSP_LIB = $(M480_BSP_PATH)/Library
-M48XBSP_THIRD_PARTY = $(M480_BSP_PATH)/ThirdParty
-
-STARTUP_FILE = $(M48XBSP_LIB)/Device/Nuvoton/M480/Source/GCC/startup_M480.o
-
 
 INC += -I.
 INC += -I$(TOP)
@@ -124,6 +132,8 @@ SRC_MODS_C = $(addprefix mods/,\
 	pybled.c \
 	moduos.c \
 	rng.c \
+	pybpwm.c \
+	pybwdt.c \
 	)
 
 SRC_O = \
@@ -151,6 +161,9 @@ SRC_BSP_DRIVER_C = $(addprefix $(M48XBSP_LIB)/StdDriver/src/,\
 	usbd.c \
 	fmc.c \
 	crypto.c \
+	bpwm.c \
+	epwm.c \
+	wdt.c \
 	)
 
 ifeq ($(MICROPY_PY_THREAD),1)
@@ -168,44 +181,123 @@ SRC_RTOS_C = $(addprefix $(M48XBSP_THIRD_PARTY)/FreeRTOS/Source/,\
 
 endif
 
+ifeq ($(MICROPY_SSL_NVT_MBEDTLS),1)
+
+SRC_MBEDTLS_C = $(addprefix $(M48XBSP_THIRD_PARTY)/mbedtls-2.13.0/library/,\
+	aes.c \
+	sha256.c \
+	platform_util.c \
+	pk.c \
+	sha1.c \
+	sha512.c \
+	pk_wrap.c \
+	md_wrap.c \
+	cipher_wrap.c \
+	ssl_tls.c \
+	ssl_cli.c \
+	ssl_srv.c \
+	debug.c \
+	x509_crt.c \
+	md.c \
+	asn1parse.c \
+	cipher.c \
+	ctr_drbg.c \
+	md5.c \
+	x509.c \
+	entropy.c \
+	pkparse.c \
+	rsa.c \
+	ecp.c \
+	bignum.c \
+	ecdsa.c \
+	ripemd160.c \
+	ssl_ciphersuites.c \
+	dhm.c \
+	ecdh.c \
+	pem.c \
+	gcm.c \
+	ecp_curves.c \
+	oid.c \
+	chachapoly.c \
+	chacha20.c \
+	des.c \
+	ccm.c \
+	camellia.c \
+	blowfish.c \
+	arc4.c \
+	entropy_poll.c \
+	pkcs12.c \
+	pkcs5.c \
+	rsa_internal.c \
+	hmac_drbg.c \
+	asn1write.c \
+	base64.c \
+	poly1305.c \
+	)
+
+endif
+
+ifeq ($(MICROPY_SSL_NVT_AXTLS),1)
+
+SRC_AXTLS_C = $(addprefix lib/axtls/,\
+	ssl/asn1.c \
+	ssl/loader.c \
+	ssl/tls1.c \
+	ssl/tls1_svr.c \
+	ssl/tls1_clnt.c \
+	ssl/x509.c \
+	crypto/aes.c \
+	crypto/bigint.c \
+	crypto/crypto_misc.c \
+	crypto/hmac.c \
+	crypto/md5.c \
+	crypto/rsa.c \
+	crypto/sha1.c \
+	crypto/sha256.c \
+	crypto/sha512.c \
+	crypto/sha384.c \
+	)
+
+endif
+
 ifeq ($(MICROPY_NVT_LWIP),1)
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/lwIP/src/include -Ilwip-port/include
 CFLAGS += -DMICROPY_NVT_LWIP=1
 
 SRC_LWIP_C = lwip-port/netif/ethernetif.c lwip-port/sys_arch.c
 SRC_LWIP_C += $(addprefix $(M48XBSP_THIRD_PARTY)/lwIP/src/,\
-        core/def.c \
-        core/dns.c \
-        core/init.c \
-        core/mem.c \
-        core/memp.c \
-        core/netif.c \
-        core/pbuf.c \
-        core/raw.c \
-        core/stats.c \
-        core/tcp.c \
-        core/tcp_in.c \
-        core/tcp_out.c \
-        core/udp.c \
-        core/ip.c \
-        core/timeouts.c \
-        core/ipv4/autoip.c \
-        core/ipv4/icmp.c \
-        core/ipv4/igmp.c \
-        core/inet_chksum.c \
-        core/ipv4/ip4_addr.c \
-        core/ipv4/ip4.c \
-        core/ipv4/ip4_frag.c \
-        core/ipv4/dhcp.c \
-        core/ipv4/etharp.c \
-        netif/ethernet.c \
-        api/tcpip.c \
-        api/api_lib.c \
-        api/api_msg.c \
-        api/sockets.c \
-        api/netbuf.c \
-        api/netdb.c \
-        api/err.c \
+	core/def.c \
+	core/dns.c \
+	core/init.c \
+	core/mem.c \
+	core/memp.c \
+	core/netif.c \
+	core/pbuf.c \
+	core/raw.c \
+	core/stats.c \
+	core/tcp.c \
+	core/tcp_in.c \
+	core/tcp_out.c \
+	core/udp.c \
+	core/ip.c \
+	core/timeouts.c \
+	core/ipv4/autoip.c \
+	core/ipv4/icmp.c \
+	core/ipv4/igmp.c \
+	core/inet_chksum.c \
+	core/ipv4/ip4_addr.c \
+	core/ipv4/ip4.c \
+	core/ipv4/ip4_frag.c \
+	core/ipv4/dhcp.c \
+	core/ipv4/etharp.c \
+	netif/ethernet.c \
+	api/tcpip.c \
+	api/api_lib.c \
+	api/api_msg.c \
+	api/sockets.c \
+	api/netbuf.c \
+	api/netdb.c \
+	api/err.c \
 	)
 endif
 
@@ -240,6 +332,12 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_DRIVER_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_BSP_DRIVER_C:.c=.o))
 ifeq ($(MICROPY_PY_THREAD),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_RTOS_C:.c=.o))
+endif
+ifeq ($(MICROPY_SSL_NVT_MBEDTLS),1)
+OBJ += $(addprefix $(BUILD)/, $(SRC_MBEDTLS_C:.c=.o))
+endif
+ifeq ($(MICROPY_SSL_NVT_AXTLS),1)
+OBJ += $(addprefix $(BUILD)/, $(SRC_AXTLS_C:.c=.o))
 endif
 ifeq ($(MICROPY_NVT_LWIP),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_LWIP_C:.c=.o))

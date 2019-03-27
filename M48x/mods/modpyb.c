@@ -45,6 +45,8 @@
 #include "pybusb.h"
 #include "pybswitch.h"
 #include "pybled.h"
+#include "pybpwm.h"
+#include "pybwdt.h"
 #include "rng.h"
 
 /// \function elapsed_millis(start)
@@ -109,6 +111,8 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_udelay), MP_ROM_PTR(&mp_utime_sleep_us_obj) },
 
 	{ MP_ROM_QSTR(MP_QSTR_Timer), MP_ROM_PTR(&pyb_timer_type) },
+	{ MP_ROM_QSTR(MP_QSTR_PWM), MP_ROM_PTR(&pyb_pwm_type) },
+	{ MP_ROM_QSTR(MP_QSTR_WDT), MP_ROM_PTR(&pyb_wdt_type) },
 
 #if MICROPY_HW_ENABLE_USBD
     { MP_ROM_QSTR(MP_QSTR_usb_mode), MP_ROM_PTR(&pyb_usb_mode_obj) },

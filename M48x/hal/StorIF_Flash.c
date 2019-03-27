@@ -10,7 +10,7 @@
 #include "NuMicro.h"
 #include "StorIF.h"
 
-#define DATA_FLASH_STORAGE_OFFSET       0x00050000  /* To avoid the code to write APROM */
+#define DATA_FLASH_STORAGE_OFFSET       0x00060000  /* To avoid the code to write APROM */
 #define DATA_FLASH_SECTOR_SIZE			512  		/* DATA FLASH sector size */
 #define DATA_FLASH_STORAGE_LBA_OFFSET   (DATA_FLASH_STORAGE_OFFSET / DATA_FLASH_SECTOR_SIZE)  /* DATA FLASH logic bass address */
 #define DATA_FLASH_STORAGE_SIZE   		(128*1024)  /* Configure the DATA FLASH storage size. To pass USB-IF MSC Test, it needs > 64KB */
