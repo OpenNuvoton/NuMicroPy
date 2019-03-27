@@ -17,7 +17,7 @@ NuMaker-PFM-M487 |M487     |362KB     |77KB
 
 ----
 ## How to start NuMicroPy
-1. Dowmload and install [Nu-Link Command Tool](https://www.nuvoton.com/hq/support/tool-and-software/software/programmer/?__locale=en)
+1. Download and install [Nu-Link Command Tool](https://www.nuvoton.com/hq/support/tool-and-software/software/programmer/?__locale=en)
 2. Hardware setup steps  
 a. Turn on ICE function switch pin 1,2,3 and 4  
 ![NuMaker-PFM-M487](https://i.imgur.com/tFvodDh.jpg)  
