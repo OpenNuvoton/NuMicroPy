@@ -378,7 +378,7 @@ int main (void)
 	*/
 
 	printf("+-------------------------------------------------------+\n");
-	printf("|       Micropython Code for Nuvoton M48x |\n");
+	printf("|          Micropython Code for Nuvoton M48x            |\n");
 	printf("+-------------------------------------------------------+\n");
 
 	flash_init();

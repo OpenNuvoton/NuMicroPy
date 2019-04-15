@@ -5,6 +5,7 @@ M480_BSP_PATH = ../M480BSP
 # Select the board to build for: if not given on the command line,
 # then default to PYBV10.
 BOARD ?= NuMaker-PFM-M487
+#BOARD ?= NuMaker-IOT-M487
 ifeq ($(wildcard boards/$(BOARD)/.),)
 $(error Invalid BOARD specified)
 endif
@@ -134,6 +135,7 @@ SRC_MODS_C = $(addprefix mods/,\
 	rng.c \
 	pybpwm.c \
 	pybwdt.c \
+	pybaccel.c \
 	)
 
 SRC_O = \
@@ -361,7 +363,7 @@ $(BUILD)/firmware.elf: $(OBJ)
 
 $(BUILD)/firmware.bin: $(BUILD)/firmware.elf
 	$(Q)$(OBJCOPY) -O binary -j .isr_vector -j .text -j .data $^ $(BUILD)/firmware.bin
-	cp $(BUILD)/firmware.bin ../build/NuMaker-PFM-M487/
+	cp $(BUILD)/firmware.bin ../build/$(BOARD)/
 
 test: $(BUILD)/firmware.elf
 	$(Q)/bin/echo -e "print('hello world!', list(x+1 for x in range(10)), end='eol\\\\n')\\r\\n\\x04" | $(BUILD)/firmware.elf | tail -n2 | grep "^hello world! \\[1, 2, 3, 4, 5, 6, 7, 8, 9, 10\\]eol"

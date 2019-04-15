@@ -47,6 +47,7 @@
 #include "pybled.h"
 #include "pybpwm.h"
 #include "pybwdt.h"
+#include "pybaccel.h"
 #include "rng.h"
 
 /// \function elapsed_millis(start)
@@ -154,6 +155,12 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
 
 #if MICROPY_HW_ENABLE_RNG
     { MP_ROM_QSTR(MP_QSTR_rng), MP_ROM_PTR(&pyb_rng_get_obj) },
+#endif
+
+#if MICROPY_HW_HAS_BMX055
+    { MP_ROM_QSTR(MP_QSTR_Accel), MP_ROM_PTR(&pyb_accel_type) },
+    { MP_ROM_QSTR(MP_QSTR_Gyro), MP_ROM_PTR(&pyb_gyro_type) },
+    { MP_ROM_QSTR(MP_QSTR_Mag), MP_ROM_PTR(&pyb_mag_type) },
 #endif
 
    { MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&pyb_uart_type) },

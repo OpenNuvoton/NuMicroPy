@@ -82,6 +82,7 @@ extern const pin_obj_t *pin_find_named_pin(const mp_obj_dict_t *named_pins, mp_o
 extern const pin_af_obj_t *pin_find_af_by_mfp_value(const pin_obj_t *pin, mp_uint_t af_value);
 extern const pin_af_obj_t *pin_find_af(const pin_obj_t *pin, uint8_t fn, uint8_t unit);
 extern const pin_af_obj_t *pin_find_af_by_index(const pin_obj_t *pin, mp_uint_t af_idx);
+extern const pin_af_obj_t *pin_find_af_by_fn_type(const pin_obj_t *pin, uint8_t af_fn, uint8_t af_type);
 
 extern void pin_init0(void);
 

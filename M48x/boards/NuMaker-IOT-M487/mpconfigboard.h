@@ -66,8 +66,8 @@
 
 #define MICROPY_HW_USRSW_SW2_NAME		"sw2"
 #define MICROPY_HW_USRSW_SW3_NAME		"sw3"
-#define MICROPY_HW_USRSW_SW2_PIN        (pin_G15)
-#define MICROPY_HW_USRSW_SW3_PIN        (pin_F11)
+#define MICROPY_HW_USRSW_SW2_PIN        (pin_F11)
+#define MICROPY_HW_USRSW_SW3_PIN        (pin_G5)
 
 // The NuMaker has 3 LEDs
 #define MICROPY_HW_LED0_NAME		"led0"
@@ -83,4 +83,9 @@
 
 //RNG (hardware random number generate)
 #define MICROPY_HW_ENABLE_RNG       (1)
+
+#define MICROPY_HW_HAS_BMX055		(1)
+#define MICROPY_BMX055_SCL			(pin_D1)
+#define MICROPY_BMX055_SDA			(pin_D0)
+
 
