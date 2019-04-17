@@ -866,8 +866,6 @@ STATIC mp_obj_t pyb_accel_init_helper(pyb_accel_obj_t *self, size_t n_args, cons
         { MP_QSTR_range,         MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = BIT_ACC_RANGE_8G} },
     };
 
-	printf("pyb_accel_init_helper: n_args:%d\n", n_args);
-
     // parse args
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
