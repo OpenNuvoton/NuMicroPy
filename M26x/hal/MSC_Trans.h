@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * @file     MSC_Trans.h
- * @brief    M480 series USB class transfer code for MSC
+ * @brief    M26x series USB class transfer code for MSC
  * @version  0.0.1
  *
  * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
@@ -76,8 +76,8 @@ static __INLINE uint32_t get_be32(uint8_t *buf)
 /******************************************************************************/
 /*                USBD Mass Storage Structure                                 */
 /******************************************************************************/
-/** @addtogroup M480_USBD_Mass_Exported_Struct M480 USBD Mass Exported Struct
-  M480 USBD Mass Specific Struct
+/** @addtogroup M26x_USBD_Mass_Exported_Struct M26x USBD Mass Exported Struct
+  M26x USBD Mass Specific Struct
   @{
 */
 

@@ -93,10 +93,10 @@ typedef struct _pyb_dac_obj_t {
 	mp_obj_t timer_obj;
 } pyb_dac_obj_t;
 
-#define M48X_MAX_DAC_INST 2
+#define M26X_MAX_DAC_INST 2
 
 
-STATIC pyb_dac_obj_t pyb_dac_obj[M48X_MAX_DAC_INST] = {
+STATIC pyb_dac_obj_t pyb_dac_obj[M26X_MAX_DAC_INST] = {
 #if defined(MICROPY_HW_DAC0_OUT)
     {{&pyb_dac_type}, 0, DAC0, 8, PDMA_DAC0_TX, DAC_STATE_RESET},
 #else
@@ -312,7 +312,7 @@ STATIC mp_obj_t pyb_dac_make_new(const mp_obj_type_t *type, size_t n_args, size_
     mp_int_t dac_id = mp_obj_get_int(args[0]);
 
     // check if the timer exists
-    if (dac_id < 0 || dac_id >= M48X_MAX_DAC_INST) {
+    if (dac_id < 0 || dac_id >= M26X_MAX_DAC_INST) {
         nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "DAC(%d) doesn't exist", dac_id));
     }
 

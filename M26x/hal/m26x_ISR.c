@@ -71,9 +71,19 @@
 
 #include "mods/pybpin.h"
 #include "mods/pybirq.h"
+#include "mods/pybuart.h"
+
 #include "hal/pin_int.h"
 #include "hal/M26x_USBD.h"
-#
+#include "hal/M26x_I2C.h"
+#include "hal/M26x_SPI.h"
+#include "hal/dma.h"
+
+#include "mods/pybcan.h"
+#include "mods/pybtimer.h"
+#include "mods/pybpwm.h"
+
+
 
 /**
  * @brief       GPIO PA IRQ
@@ -301,5 +311,416 @@ void USBD_IRQHandler(void)
 	Handle_USBDEV_Irq(u32IntStatus, u32BusState);
 	IRQ_EXIT(USBD_IRQn);
 }
+
+/*---------------------------------------------------------------------------------------------------------*/
+/* ISR to handle UART Channel interrupt event                                                            */
+/*---------------------------------------------------------------------------------------------------------*/
+void UART0_IRQHandler(void)
+{
+	uint32_t u32Status;
+
+	IRQ_ENTER(UART0_IRQn);
+	u32Status = UART0->INTSTS;
+
+	if(u32Status)
+		Handle_UART_Irq(0, u32Status);
+
+    if(UART0->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
+    {
+        UART0->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
+    }
+
+	IRQ_EXIT(UART0_IRQn);
+}
+
+void UART1_IRQHandler(void)
+{
+	uint32_t u32Status;
+
+	IRQ_ENTER(UART1_IRQn);
+	u32Status = UART1->INTSTS;
+
+
+	if(u32Status)
+		Handle_UART_Irq(1, u32Status);
+
+
+    if(UART1->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
+    {
+        UART1->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
+    }
+
+	IRQ_EXIT(UART1_IRQn);
+
+}
+
+void UART2_IRQHandler(void)
+{
+	uint32_t u32Status;
+
+	IRQ_ENTER(UART2_IRQn);
+	u32Status = UART2->INTSTS;
+
+	if(u32Status)
+		Handle_UART_Irq(2, u32Status);
+
+
+    if(UART2->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
+    {
+        UART2->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
+    }
+
+	IRQ_EXIT(UART2_IRQn);
+
+}
+
+void UART3_IRQHandler(void)
+{
+	uint32_t u32Status;
+
+	IRQ_ENTER(UART3_IRQn);
+	u32Status = UART3->INTSTS;
+
+	if(u32Status)
+		Handle_UART_Irq(3, u32Status);
+
+
+    if(UART3->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
+    {
+        UART3->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
+    }
+
+	IRQ_EXIT(UART3_IRQn);
+
+}
+
+void UART4_IRQHandler(void)
+{
+	uint32_t u32Status;
+
+	IRQ_ENTER(UART4_IRQn);
+	u32Status = UART4->INTSTS;
+
+	if(u32Status)
+		Handle_UART_Irq(4, u32Status);
+
+
+    if(UART4->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
+    {
+        UART4->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
+    }
+
+	IRQ_EXIT(UART4_IRQn);
+
+}
+
+void UART5_IRQHandler(void)
+{
+	uint32_t u32Status;
+
+	IRQ_ENTER(UART5_IRQn);
+	u32Status = UART5->INTSTS;
+
+	if(u32Status)
+		Handle_UART_Irq(5, u32Status);
+
+    if(UART5->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
+    {
+        UART5->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
+    }
+
+	IRQ_EXIT(UART5_IRQn);
+
+}
+
+void SPI0_IRQHandler(void)
+{
+	IRQ_ENTER(SPI0_IRQn);
+	Handle_SPI_Irq(SPI0);
+	IRQ_EXIT(SPI0_IRQn);
+}
+
+void SPI1_IRQHandler(void)
+{
+	IRQ_ENTER(SPI1_IRQn);
+	Handle_SPI_Irq(SPI1);
+	IRQ_EXIT(SPI1_IRQn);
+}
+
+void SPI2_IRQHandler(void)
+{
+	IRQ_ENTER(SPI2_IRQn);
+	Handle_SPI_Irq(SPI2);
+	IRQ_EXIT(SPI2_IRQn);
+}
+
+void SPI3_IRQHandler(void)
+{
+	IRQ_ENTER(SPI3_IRQn);
+	Handle_SPI_Irq(SPI3);
+	IRQ_EXIT(SPI3_IRQn);
+}
+
+#if MICROPY_HW_ENABLE_HW_I2C
+
+void I2C0_IRQHandler(void)
+{
+    uint32_t u32Status;
+
+	IRQ_ENTER(I2C0_IRQn);
+    u32Status = I2C_GET_STATUS(I2C0);
+
+    if (I2C_GET_TIMEOUT_FLAG(I2C0))
+    {
+        /* Clear I2C0 Timeout Flag */
+        I2C_ClearTimeoutFlag(I2C0);
+    }
+    else
+    {
+//		printf("I2C status %d \n", u32Status);
+		Handle_I2C_Irq(I2C0, u32Status);
+    }
+	IRQ_EXIT(I2C0_IRQn);
+}
+
+void I2C1_IRQHandler(void)
+{
+    uint32_t u32Status;
+
+	IRQ_ENTER(I2C1_IRQn);
+
+    u32Status = I2C_GET_STATUS(I2C1);
+
+    if (I2C_GET_TIMEOUT_FLAG(I2C1))
+    {
+        /* Clear I2C0 Timeout Flag */
+        I2C_ClearTimeoutFlag(I2C1);
+    }
+    else
+    {
+		Handle_I2C_Irq(I2C1, u32Status);
+    }
+	IRQ_EXIT(I2C1_IRQn);
+}
+
+void I2C2_IRQHandler(void)
+{
+    uint32_t u32Status;
+
+	IRQ_ENTER(I2C2_IRQn);
+
+    u32Status = I2C_GET_STATUS(I2C2);
+
+    if (I2C_GET_TIMEOUT_FLAG(I2C2))
+    {
+        /* Clear I2C0 Timeout Flag */
+        I2C_ClearTimeoutFlag(I2C2);
+    }
+    else
+    {
+		Handle_I2C_Irq(I2C2, u32Status);
+    }
+	IRQ_EXIT(I2C2_IRQn);
+}
+
+#endif
   
-  
+void PDMA0_IRQHandler(void)
+{
+	IRQ_ENTER(PDMA0_IRQn);
+	Handle_PDMA_Irq();
+	IRQ_EXIT(PDMA0_IRQn);
+}
+
+/**
+  * @brief  CAN0_IRQ Handler.
+  * @param  None.
+  * @return None.
+  */
+void CAN0_IRQHandler(void)
+{
+    uint32_t u32IIDRStatus;
+
+	IRQ_ENTER(CAN0_IRQn);
+    u32IIDRStatus = CAN0->IIDR;
+
+
+	if(u32IIDRStatus){
+		Handle_CAN_Irq(0, u32IIDRStatus);
+
+		if(u32IIDRStatus <= 0x20)
+			CAN_CLR_INT_PENDING_BIT(CAN0, ((CAN0->IIDR) -1));
+	}
+
+
+	IRQ_EXIT(CAN0_IRQn);
+
+}
+
+
+void TMR0_IRQHandler(void)
+{
+	uint32_t u32Status;
+	IRQ_ENTER(TMR0_IRQn);
+
+	u32Status = TIMER_GetIntFlag(TIMER0);
+	if(u32Status){
+		TIMER_ClearIntFlag(TIMER0);
+		Handle_TMR_Irq(0, eTMR_INT_INT, u32Status);
+	}
+
+	u32Status = TIMER_GetCaptureIntFlag(TIMER0);
+	if(u32Status){
+		TIMER_ClearCaptureIntFlag(TIMER0);
+		Handle_TMR_Irq(0, eTMR_INT_EINT, u32Status);
+	}
+
+	u32Status = TIMER_GetPWMIntFlag(TIMER0);
+	if(u32Status){
+		TIMER_ClearPWMIntFlag(TIMER0);
+		Handle_TMR_Irq(0, eTMR_INT_PWMINT, u32Status);
+	}
+
+	IRQ_EXIT(TMR0_IRQn);
+}
+
+void TMR1_IRQHandler(void)
+{
+	uint32_t u32Status;
+
+	IRQ_ENTER(TMR1_IRQn);
+
+	u32Status = TIMER_GetIntFlag(TIMER1);
+	if(u32Status){
+		TIMER_ClearIntFlag(TIMER1);
+		Handle_TMR_Irq(1, eTMR_INT_INT, u32Status);
+	}
+
+	u32Status = TIMER_GetCaptureIntFlag(TIMER1);
+	if(u32Status){
+		TIMER_ClearCaptureIntFlag(TIMER1);
+		Handle_TMR_Irq(1, eTMR_INT_EINT, u32Status);
+	}
+
+	u32Status = TIMER_GetPWMIntFlag(TIMER1);
+	if(u32Status){
+		TIMER_ClearPWMIntFlag(TIMER1);
+		Handle_TMR_Irq(1, eTMR_INT_PWMINT, u32Status);
+	}
+
+	IRQ_EXIT(TMR1_IRQn);
+}
+
+void TMR2_IRQHandler(void)
+{
+	uint32_t u32Status;
+
+	IRQ_ENTER(TMR2_IRQn);
+
+	u32Status = TIMER_GetIntFlag(TIMER2);
+	if(u32Status){
+		TIMER_ClearIntFlag(TIMER2);
+		Handle_TMR_Irq(2, eTMR_INT_INT, u32Status);
+	}
+
+	u32Status = TIMER_GetCaptureIntFlag(TIMER2);
+	if(u32Status){
+		TIMER_ClearCaptureIntFlag(TIMER2);
+		Handle_TMR_Irq(2, eTMR_INT_EINT, u32Status);
+	}
+
+	u32Status = TIMER_GetPWMIntFlag(TIMER2);
+	if(u32Status){
+		TIMER_ClearPWMIntFlag(TIMER2);
+		Handle_TMR_Irq(2, eTMR_INT_PWMINT, u32Status);
+	}
+
+	IRQ_EXIT(TMR2_IRQn);
+}
+
+void TMR3_IRQHandler(void)
+{
+	uint32_t u32Status;
+
+	IRQ_ENTER(TMR3_IRQn);
+
+	u32Status = TIMER_GetIntFlag(TIMER3);
+	if(u32Status){
+		TIMER_ClearIntFlag(TIMER3);
+		Handle_TMR_Irq(3, eTMR_INT_INT, u32Status);
+	}
+
+	u32Status = TIMER_GetCaptureIntFlag(TIMER3);
+	if(u32Status){
+		TIMER_ClearCaptureIntFlag(TIMER3);
+		Handle_TMR_Irq(3, eTMR_INT_EINT, u32Status);
+	}
+
+	u32Status = TIMER_GetPWMIntFlag(TIMER3);
+	if(u32Status){
+		TIMER_ClearPWMIntFlag(TIMER3);
+		Handle_TMR_Irq(3, eTMR_INT_PWMINT, u32Status);
+	}
+
+	IRQ_EXIT(TMR3_IRQn);
+}
+
+void BPWM0_IRQHandler(void)
+{
+
+	IRQ_ENTER(BPWM0_IRQn);
+	Handle_PWM_Irq(0);
+	IRQ_EXIT(BPWM0_IRQn);
+}
+
+void BPWM1_IRQHandler(void)
+{
+
+	IRQ_ENTER(BPWM1_IRQn);
+	Handle_PWM_Irq(1);
+	IRQ_EXIT(BPWM1_IRQn);
+}
+
+void EPWM0_P0_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM0P0_IRQn);
+	Handle_EPWM_Irq(0, 0);
+	IRQ_EXIT(EPWM0P0_IRQn);
+}
+
+void EPWM0_P1_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM0P1_IRQn);
+	Handle_EPWM_Irq(0, 1);
+	IRQ_EXIT(EPWM0P1_IRQn);
+}
+
+void EPWM0_P2_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM0P2_IRQn);
+	Handle_EPWM_Irq(0, 2);
+	IRQ_EXIT(EPWM0P2_IRQn);
+}
+
+void EPWM1_P0_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM1P0_IRQn);
+	Handle_EPWM_Irq(1, 0);
+	IRQ_EXIT(EPWM1P0_IRQn);
+}
+
+void EPWM1_P1_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM1P1_IRQn);
+	Handle_EPWM_Irq(1, 1);
+	IRQ_EXIT(EPWM1P1_IRQn);
+}
+
+void EPWM1_P2_IRQHandler(void)
+{
+	IRQ_ENTER(EPWM1P2_IRQn);
+	Handle_EPWM_Irq(1, 2);
+	IRQ_EXIT(EPWM1P2_IRQn);
+}
+
+

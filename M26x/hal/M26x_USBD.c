@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     M26x_USB.c
  * @version  V0.01
- * @brief    M480 series USB HAL source file
+ * @brief    M261 series USB HAL source file
  *
  * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/

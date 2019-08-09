@@ -121,8 +121,7 @@
 
 // Enable CAN if there are any peripherals defined
 
-#if defined(MICROPY_HW_CAN0_RXD) \
-	||defined(MICROPY_HW_CAN1_RXD)
+#if defined(MICROPY_HW_CAN0_RXD)
 
 #define MICROPY_HW_ENABLE_CAN (1)
 #endif

@@ -39,7 +39,7 @@
 #define IRQ_ENABLE_STATS (0)
 
 #if IRQ_ENABLE_STATS
-extern uint32_t irq_stats[USBOTG20_IRQn + 1];
+extern uint32_t irq_stats[TRNG_IRQn + 1];
 #define IRQ_ENTER(irq) ++irq_stats[irq]
 #define IRQ_EXIT(irq)
 #else

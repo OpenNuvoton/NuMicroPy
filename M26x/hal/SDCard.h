@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     SDCard.h
  * @version  V1.00
- * @brief    M480 SD card HAL header file for micropython
+ * @brief    M261 SD card HAL header file for micropython
  *
  * @copyright (C) 2016 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/

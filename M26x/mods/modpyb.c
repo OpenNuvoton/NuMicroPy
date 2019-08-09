@@ -35,23 +35,23 @@
 
 #include "rng.h"
 #include "pybsdcard.h"
+#include "pybuart.h"
+#include "pybspi.h"
+#include "pybi2c.h"
+#include "pybirq.h"
+#include "pybled.h"
+#include "pybadc.h"
+#include "pybcan.h"
+#include "pybdac.h"
+#include "pybpwm.h"
+#include "pybrtc.h"
+#include "pybwdt.h"
+#include "pybtimer.h"
 
 //TODO[MUST]:
 #if 0
-#include "pybirq.h"
-#include "pybi2c.h"
-#include "pybspi.h"
-#include "pybadc.h"
-#include "pybrtc.h"
-#include "pybtimer.h"
-#include "pybuart.h"
-#include "pybdac.h"
-#include "pybcan.h"
 #include "pybusb.h"
 #include "pybswitch.h"
-#include "pybled.h"
-#include "pybpwm.h"
-#include "pybwdt.h"
 #include "pybaccel.h"
 #endif
 
@@ -113,9 +113,16 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_rng), MP_ROM_PTR(&pyb_rng_get_obj) },
 #endif
 
+	{ MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&pyb_uart_type) },
 
-//TODO[MUST]:
-#if 0
+#if MICROPY_HW_ENABLE_HW_SPI
+	{ MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&pyb_spi_type) },
+#endif
+
+#if MICROPY_HW_ENABLE_HW_I2C
+    { MP_ROM_QSTR(MP_QSTR_I2C), MP_ROM_PTR(&pyb_i2c_type) },
+#endif
+
 	//IRQ
     { MP_ROM_QSTR(MP_QSTR_wfi), MP_ROM_PTR(&pyb_wfi_obj) },
     { MP_ROM_QSTR(MP_QSTR_disable_irq), MP_ROM_PTR(&pyb_disable_irq_obj) },
@@ -124,11 +131,36 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_irq_stats), MP_ROM_PTR(&pyb_irq_stats_obj) },
     #endif
 
-	{ MP_ROM_QSTR(MP_QSTR_Timer), MP_ROM_PTR(&pyb_timer_type) },
+#if MICROPY_HW_HAS_LED
+    { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&pyb_led_type) },
+#endif
+
+#if MICROPY_HW_ENABLE_HW_EADC
+	{ MP_ROM_QSTR(MP_QSTR_ADCAll), MP_ROM_PTR(&pyb_adc_all_type) },
+    { MP_ROM_QSTR(MP_QSTR_ADC), MP_ROM_PTR(&pyb_adc_type) },
+#endif
+
+#if MICROPY_HW_ENABLE_CAN
+    { MP_ROM_QSTR(MP_QSTR_CAN), MP_ROM_PTR(&pyb_can_type) },
+#endif
+
+#if MICROPY_HW_ENABLE_DAC
+    { MP_ROM_QSTR(MP_QSTR_DAC), MP_ROM_PTR(&pyb_dac_type) },
+#endif
+
 	{ MP_ROM_QSTR(MP_QSTR_PWM), MP_ROM_PTR(&pyb_pwm_type) },
 	{ MP_ROM_QSTR(MP_QSTR_WDT), MP_ROM_PTR(&pyb_wdt_type) },
 
-	{ MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&pyb_uart_type) },
+#if MICROPY_HW_ENABLE_RTC
+    { MP_ROM_QSTR(MP_QSTR_RTC), MP_ROM_PTR(&pyb_rtc_type) },
+#endif
+
+	{ MP_ROM_QSTR(MP_QSTR_Timer), MP_ROM_PTR(&pyb_timer_type) },
+
+
+//TODO[MUST]:
+#if 0
+
 
 #if MICROPY_HW_ENABLE_USBD
     { MP_ROM_QSTR(MP_QSTR_usb_mode), MP_ROM_PTR(&pyb_usb_mode_obj) },
@@ -136,37 +168,12 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_USB_VCP), MP_ROM_PTR(&pyb_usb_vcp_type) },
 #endif
 
-#if MICROPY_HW_ENABLE_HW_I2C
-    { MP_ROM_QSTR(MP_QSTR_I2C), MP_ROM_PTR(&pyb_i2c_type) },
-#endif
 
-#if MICROPY_HW_ENABLE_HW_SPI
-	{ MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&pyb_spi_type) },
-#endif
 
-#if MICROPY_HW_ENABLE_HW_EADC
-	{ MP_ROM_QSTR(MP_QSTR_ADCALL), MP_ROM_PTR(&pyb_adc_all_type) },
-    { MP_ROM_QSTR(MP_QSTR_ADC), MP_ROM_PTR(&pyb_adc_type) },
-#endif
 
-#if MICROPY_HW_ENABLE_RTC
-    { MP_ROM_QSTR(MP_QSTR_RTC), MP_ROM_PTR(&pyb_rtc_type) },
-#endif
-
-#if MICROPY_HW_ENABLE_DAC
-    { MP_ROM_QSTR(MP_QSTR_DAC), MP_ROM_PTR(&pyb_dac_type) },
-#endif
-
-#if MICROPY_HW_ENABLE_CAN
-    { MP_ROM_QSTR(MP_QSTR_CAN), MP_ROM_PTR(&pyb_can_type) },
-#endif
 
 #if MICROPY_HW_HAS_SWITCH
     { MP_ROM_QSTR(MP_QSTR_Switch), MP_ROM_PTR(&pyb_switch_type) },
-#endif
-
-#if MICROPY_HW_HAS_LED
-    { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&pyb_led_type) },
 #endif
 
 

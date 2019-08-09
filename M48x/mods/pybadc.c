@@ -783,7 +783,7 @@ STATIC void adc_all_print(const mp_print_t *print, mp_obj_t self_in, mp_print_ki
     //printf("==>%d\n", sizeof(eadc_channel_obj_t.eadc_channel_pin_obj.eadc_channel_obj)/sizeof(eadc_channel_obj_t));
     /*TODO from here*/
     //for(uint32_t i=0; i<sizeof(pyb_eadc_all_obj->eadc_channel_obj)/sizeof(pyb_adc_all_obj_t); i++){
-    for(uint32_t i=0; i < 18; i++){
+    for(uint32_t i=0; i <= 18; i++){
         if(eadc_channel_obj_list[i].eadc_channel_pin_obj)
             mp_printf(print, " <channel %u>\n", i); 
     }
@@ -792,15 +792,22 @@ STATIC void adc_all_print(const mp_print_t *print, mp_obj_t self_in, mp_print_ki
 }
 
 STATIC mp_obj_t adc_all_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+    mp_int_t res;
     // check number of arguments
     mp_arg_check_num(n_args, n_kw, 1, 2, false);
+
+	if (n_args == 0){
+		res = 12;
+	}
+	else{
+		res = mp_obj_get_int(args[0]);
+	}
 
     // make ADCAll object
     pyb_adc_all_obj_t *o = m_new_obj(pyb_adc_all_obj_t);
     o->eadc_base = EADC0;
     o->base.type = &pyb_adc_all_type;
     
-    mp_int_t res = mp_obj_get_int(args[0]);
     //uint32_t en_mask = 0xffffffff; //default all channel open
     if(o==NULL) {
             nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError,

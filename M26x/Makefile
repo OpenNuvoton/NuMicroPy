@@ -77,10 +77,10 @@ SRC_C = \
 	gccollect.c \
 	fatfs_port.c \
 	misc/mperror.c \
+	bufhelper.c \
 	$(BUILD)/_frozen_mpy.c \
 	$(wildcard boards/$(BOARD)/*.c)
 
-#	bufhelper.c \
 #	misc/FreeRTOSHooks.c \
 #	mpthreadport.c \
 
@@ -111,26 +111,25 @@ SRC_MODS_C = $(addprefix mods/,\
 	modutime.c \
 	rng.c \
 	pybsdcard.c \
+	pybuart.c \
+	pybspi.c \
+	pybi2c.c \
+	pybirq.c \
+	pybled.c \
+	pybadc.c \
+	pybcan.c \
+	pybdac.c \
+	pybtimer.c \
+	pybpwm.c \
+	pybrtc.c \
+	pybwdt.c \
 	)
 
 #	modnetwork.c \
-#	pybsdcard.c \
-#	pybirq.c \
-#	pybi2c.c \
-#	pybspi.c \
-#	pybadc.c \
 #	networklan.c \
 #	modsocket.c \
-#	pybrtc.c \
-#	pybtimer.c \
-#	pybuart.c \
-#	pybdac.c \
-#	pybcan.c \
 #	pybusb.c \
 #	pybswitch.c \
-#	pybled.c \
-#	pybpwm.c \
-#	pybwdt.c \
 #	pybaccel.c \
 
 
@@ -151,19 +150,19 @@ SRC_BSP_DRIVER_C = $(addprefix $(M26XBSP_LIB)/StdDriver/src/,\
 	rtc.c \
 	sdh.c \
 	usbd.c \
+	spi.c \
+	pdma.c \
+	i2c.c \
+	eadc.c\
+	can.c \
+	dac.c \
+	timer.c \
+	bpwm.c \
+	epwm.c \
+	wdt.c \
+	timer_pwm.c \
 	)
 
-#	i2c.c \
-#	spi.c \
-#	pdma.c \
-#	eadc.c\
-#	timer.c \
-#	timer_pwm.c \
-#	dac.c \
-#	can.c \
-#	bpwm.c \
-#	epwm.c \
-#	wdt.c \
 
 
 ifeq ($(MICROPY_PY_THREAD),1)
@@ -272,13 +271,12 @@ SRC_HAL_C = $(addprefix hal/,\
 	M26x_USBD.c \
 	MSC_Desc.c \
 	MSC_Trans.c \
+	M26x_SPI.c \
+	dma.c \
+	nu_modutil.c \
+	M26x_I2C.c \
 	)
 
-#	M48x_I2C.c \
-#	nu_modutil.c \
-#	M48x_SPI.c \
-#	M48x_EADC.c\
-#	dma.c \
 #	M48x_ETH.c \
 #	HID_VCPTrans.c \
 #	HID_VCPDesc.c \

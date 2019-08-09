@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * @file     MSC_Desc.c
- * @brief    M480 series USB class descriptions code for MSC
+ * @brief    M261 series USB class descriptions code for MSC
  * @version  0.0.1
  *
  * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.

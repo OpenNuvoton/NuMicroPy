@@ -11,7 +11,7 @@ def can_cb1(bus, reason, fifo_num):
 		print('Error Warning')
 	if reason == CAN.CB_REASON_ERROR_PASSIVE:
 		print('Error Passive')
-	if reason == CB_REASON_ERROR_BUS_OFF:
+	if reason == CAN.CB_REASON_ERROR_BUS_OFF:
 		print('Bus off')
 
 can0 = CAN(0, mode = CAN.NORMAL, extframe=True, baudrate = 500000)

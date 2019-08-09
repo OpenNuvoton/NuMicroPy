@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     M26x_USB.h
  * @version  V1.00
- * @brief    M480 USB HAL header file for micropython
+ * @brief    M261 USB HAL header file for micropython
  *
  * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
