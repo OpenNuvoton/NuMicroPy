@@ -47,10 +47,9 @@
 #include "pybrtc.h"
 #include "pybwdt.h"
 #include "pybtimer.h"
-
-//TODO[MUST]:
-#if 0
 #include "pybusb.h"
+
+#if 0
 #include "pybswitch.h"
 #include "pybaccel.h"
 #endif
@@ -157,20 +156,13 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
 
 	{ MP_ROM_QSTR(MP_QSTR_Timer), MP_ROM_PTR(&pyb_timer_type) },
 
-
-//TODO[MUST]:
-#if 0
-
-
 #if MICROPY_HW_ENABLE_USBD
     { MP_ROM_QSTR(MP_QSTR_usb_mode), MP_ROM_PTR(&pyb_usb_mode_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_USB_HID), MP_ROM_PTR(&pyb_usb_hid_type) },
 	{ MP_ROM_QSTR(MP_QSTR_USB_VCP), MP_ROM_PTR(&pyb_usb_vcp_type) },
 #endif
 
-
-
-
+#if 0
 
 #if MICROPY_HW_HAS_SWITCH
     { MP_ROM_QSTR(MP_QSTR_Switch), MP_ROM_PTR(&pyb_switch_type) },

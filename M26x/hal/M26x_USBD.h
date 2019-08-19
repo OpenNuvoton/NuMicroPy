@@ -104,6 +104,7 @@ int32_t USBDEV_VCPSendData(
 int32_t USBDEV_HIDInReportPacketSize();
 int32_t USBDEV_HIDOutReportPacketSize();
 
+void USBDEV_EnableUSBDevPhyClock(void);
 
 #endif
 

@@ -4,9 +4,11 @@ NuMicroPy is Nuvoton microcontroller porting for MicroPython. MicroPython is a l
 ----
 ## Major components in this repository
 - M480BSP/ -- NuMicro M480 series BSP
+- M261BSP/ -- NuMicro M261 series BSP
 - build/ -- Prebuilt frimware
 - patch/ -- BSP/MicroPython patch files
 - M48x/ -- M480 series porting of MicroPython
+- M26x/ -- M261 series porting of MicroPython
 - micropython/ -- MicroPython official release(v1.10)
 
 ----
@@ -15,6 +17,7 @@ Board            |MCU      |ROM size  |RAM size
 :----------------|---------|----------|-------
 NuMaker-PFM-M487 |M487     |362KB     |77KB
 NuMaker-IOT-M487 |M487     |373KB     |77KB
+NuMaker-M263KI   |M263     |266KB     |35KB
 
 ----
 ## How to start NuMicroPy
@@ -24,19 +27,19 @@ a. Turn on ICE function switch pin 1,2,3 and 4
 ![NuMaker-PFM-M487](https://i.imgur.com/tFvodDh.jpg)  
 b. Connect USB ICE and USB1.1 to PC  
 c. Setup your terminal program  
-![TeraTerm_setup1](https://i.imgur.com/w598b7y.jpg)  
-![TeraTerm_setup2](https://i.imgur.com/hkBwaJv.jpg) 
+![TeraTerm_setup1](https://imgur.com/oKbxDJ2.jpg)  
+![TeraTerm_setup2](https://imgur.com/tuYp3xh.jpg) 
 3. Burn firmware  
-Nu-Link-Me exported a MBED disk, just Copy and Paste prebuilt firmware.bin into MBED disk.  
-![CopyPasteFirmware](https://i.imgur.com/XcHo5fP.jpg)
+Nu-Link-Me exported a "NuMicro MCU" disk, just Copy and Paste prebuilt firmware.bin into "NuMicro MCU" disk.  
+![CopyPasteFirmware](https://imgur.com/RcxvyHH.jpg)
 4. Python code update steps  
 a. Connected USB1.1 to PC  
-b. Press the SW2 and RESET button together. Firmware will export a PYBFLASH disk.  
-![PYBFLASH disk](https://i.imgur.com/111q3XP.jpg)  
+b. [NuMaker-PFM-M487 and NuMaker-IOT-M487]: Press the SW2 and RESET button together. [NuMaker-M263KI]: Press the RESET button. Firmware will export a PYBFLASH disk.
+![PYBFLASH disk](https://imgur.com/Q7mp628.jpg)  
 c. Update your python code to boot.py or main.py
-![Main Code](https://i.imgur.com/fRwYR5x.jpg)  
+![Main Code](https://imgur.com/WGUv4MM.jpg)  
 d. Press the RESET button.  
-![Execute Result](https://i.imgur.com/ZExBjT0.jpg)  
+![Execute Result](https://imgur.com/BVns53g.jpg)  
 
 
 ----
@@ -68,12 +71,20 @@ To build MicroPython firmware for M487, use the following command.
 ```
 git clone --recursive https://github.com/OpenNuvoton/NuMicroPy.git  
 cd patch  
-./run_patch.sh  
+./run_patch.sh
+```
+For M480 series
+```  
 cd ../M48x  
 #For NuMaker-PFM-M487 board
 make V=1
 #For NuMaker-IOT-M487 board
 make BOARD=NuMaker-IOT-M487 V=1
 ```
-
+For M261 series
+```
+cd ../M26x
+#For NuMaker-M263KI board
+make V=1
+```
 ----

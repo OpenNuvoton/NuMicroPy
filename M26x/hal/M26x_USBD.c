@@ -13,8 +13,8 @@
 
 #include "M26x_USBD.h"
 #include "NuMicro.h"
-//#include "HID_VCPDesc.h"
-//#include "HID_VCPTrans.h"
+#include "HID_VCPDesc.h"
+#include "HID_VCPTrans.h"
 #include "MSC_Desc.h"
 #include "MSC_Trans.h"
 
@@ -22,7 +22,7 @@ static S_USBDEV_STATE s_sUSBDev_state;
 S_USBD_INFO_T g_sUSBDev_DescInfo;
 
 
-static void EnableHSUSBDevPhyClock(void){
+void USBDEV_EnableUSBDevPhyClock(void){
     /* Use HIRC48 as USB clock source */
     CLK_SetModuleClock(USBD_MODULE, CLK_CLKSEL0_USBSEL_HIRC48, CLK_CLKDIV0_USB(1));
 
@@ -61,7 +61,7 @@ S_USBDEV_STATE *USBDEV_Init(
 		return &s_sUSBDev_state;
 	}
 
-	EnableHSUSBDevPhyClock();
+	USBDEV_EnableUSBDevPhyClock();
 
 	if(eUSBMode == eUSBDEV_MODE_MSC){
 		MSCDesc_SetupDescInfo(&g_sUSBDev_DescInfo);
@@ -77,6 +77,7 @@ S_USBDEV_STATE *USBDEV_Init(
 	else{
 		
 #if MICROPY_HW_ENABLE_USBD
+		
 		HIDVCPDesc_SetupDescInfo(&g_sUSBDev_DescInfo, eUSBMode);
 		HIDVCPDesc_SetVID(&g_sUSBDev_DescInfo, u16VID);
 		HIDVCPDesc_SetPID(&g_sUSBDev_DescInfo, u16PID);
@@ -328,7 +329,6 @@ static void EP2_Handler(void)
 static void EP3_Handler(void)
 {
 	//VCP/MSC Bulk OUT handler
-
 	if(s_sUSBDev_state.eUSBMode == eUSBDEV_MODE_MSC){
 		MSCTrans_BulkOutHandler();
 	}
@@ -336,6 +336,7 @@ static void EP3_Handler(void)
 #if MICROPY_HW_ENABLE_USBD
 		//VCP bulk OUT handler
 		uint8_t *pu8EPAddr;
+
 		/* bulk OUT */
 		pu8EPAddr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP3));
 
@@ -402,6 +403,7 @@ void Handle_USBDEV_Irq(
 
     if (u32IntStatus & USBD_INTSTS_USB)
     {
+
         // USB event
         if (u32IntStatus & USBD_INTSTS_SETUP)
         {
@@ -427,6 +429,7 @@ void Handle_USBDEV_Irq(
         
         if (u32IntStatus & USBD_INTSTS_EP1)
         {
+
             /* Clear event flag */
             USBD_CLR_INT_FLAG(USBD_INTSTS_EP1);
 
@@ -443,6 +446,7 @@ void Handle_USBDEV_Irq(
 
         if (u32IntStatus & USBD_INTSTS_EP2)
         {
+
             /* Clear event flag */
             USBD_CLR_INT_FLAG(USBD_INTSTS_EP2);
             // Bulk IN
@@ -465,6 +469,7 @@ void Handle_USBDEV_Irq(
 
         if (u32IntStatus & USBD_INTSTS_EP5)
         {
+
             /* Clear event flag */
             USBD_CLR_INT_FLAG(USBD_INTSTS_EP5);
             // Interrupt IN
@@ -473,6 +478,7 @@ void Handle_USBDEV_Irq(
 
         if (u32IntStatus & USBD_INTSTS_EP6)
         {
+
             /* Clear event flag */
             USBD_CLR_INT_FLAG(USBD_INTSTS_EP6);
             // Interrupt OUT
@@ -481,6 +487,7 @@ void Handle_USBDEV_Irq(
 
         if (u32IntStatus & USBD_INTSTS_EP7)
         {
+
             /* Clear event flag */
             USBD_CLR_INT_FLAG(USBD_INTSTS_EP7);
         }

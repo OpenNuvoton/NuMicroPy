@@ -53,7 +53,7 @@ INC += -I$(TOP)/$(M26XBSP_LIB)/StdDriver/inc
 INC += -I$(TOP)/$(M26XBSP_THIRD_PARTY)
 INC += -I$(TOP)/$(M26XBSP_THIRD_PARTY)/FreeRTOS
 INC += -I$(TOP)/$(M26XBSP_THIRD_PARTY)/FreeRTOS/Source/include
-INC += -I$(TOP)/$(M26XBSP_THIRD_PARTY)/FreeRTOS/Source/portable/GCC/ARM_CM4F
+INC += -I$(TOP)/$(M26XBSP_THIRD_PARTY)/FreeRTOS/Source/portable/GCC/ARM_CM0
 
 #CFLAGS_CORTEX_M23= -mthumb -mtune=cortex-m23 -mabi=aapcs -mcpu=cortex-m23 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -fsingle-precision-constant -Wdouble-promotion
 CFLAGS_CORTEX_M23= -mthumb -mtune=cortex-m23 -mabi=aapcs -mcpu=cortex-m23 -fsingle-precision-constant -Wdouble-promotion
@@ -79,10 +79,10 @@ SRC_C = \
 	misc/mperror.c \
 	bufhelper.c \
 	$(BUILD)/_frozen_mpy.c \
+	misc/FreeRTOSHooks.c \
+	mpthreadport.c \
 	$(wildcard boards/$(BOARD)/*.c)
 
-#	misc/FreeRTOSHooks.c \
-#	mpthreadport.c \
 
 
 
@@ -123,12 +123,12 @@ SRC_MODS_C = $(addprefix mods/,\
 	pybpwm.c \
 	pybrtc.c \
 	pybwdt.c \
+	pybusb.c \
 	)
 
 #	modnetwork.c \
 #	networklan.c \
 #	modsocket.c \
-#	pybusb.c \
 #	pybswitch.c \
 #	pybaccel.c \
 
@@ -174,7 +174,7 @@ SRC_RTOS_C = $(addprefix $(M26XBSP_THIRD_PARTY)/FreeRTOS/Source/,\
 	queue.c \
 	tasks.c \
 	timers.c \
-	portable/GCC/ARM_CM4F/port.c \
+	portable/GCC/ARM_CM0/port.c \
 	portable/MemMang/heap_4.c \
 	)
 
@@ -275,11 +275,11 @@ SRC_HAL_C = $(addprefix hal/,\
 	dma.c \
 	nu_modutil.c \
 	M26x_I2C.c \
+	HID_VCPDesc.c \
+	HID_VCPTrans.c \
 	)
 
 #	M48x_ETH.c \
-#	HID_VCPTrans.c \
-#	HID_VCPDesc.c \
 
 
 

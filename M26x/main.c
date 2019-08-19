@@ -243,16 +243,20 @@ STATIC bool init_sdcard_fs(void) {
 }
 #endif
 
+
 static void ExecuteUsbMSC(void){
 	S_USBDEV_STATE *psUSBDev_msc_state = NULL;
-	psUSBDev_msc_state = USBDEV_Init(USBD_VID, USBD_MSC_PID, eUSBDEV_MODE_MSC);
-	if(psUSBDev_msc_state == NULL){
-		mp_raise_ValueError("bad USB mode");
-	}
+
+	USBDEV_EnableUSBDevPhyClock();
 
 	/* Start transaction */
 	if (USBD_IS_ATTACHED())
 	{
+		psUSBDev_msc_state = USBDEV_Init(USBD_VID, USBD_MSC_PID, eUSBDEV_MODE_MSC);
+		if(psUSBDev_msc_state == NULL){
+			mp_raise_ValueError("bad USB mode");
+		}
+
 		USBDEV_Start(psUSBDev_msc_state);
 		printf("Start USB device MSC class \n");
 		while(1)
@@ -420,4 +424,40 @@ int main (void)
 
 #endif
 }
+
+#if MICROPY_PY_THREAD
+
+// We need this when configSUPPORT_STATIC_ALLOCATION is enabled
+void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
+                                    StackType_t **ppxIdleTaskStackBuffer,
+                                    uint32_t *pulIdleTaskStackSize ) {
+
+// This is the static memory (TCB and stack) for the idle task
+static StaticTask_t xIdleTaskTCB; // __attribute__ ((section (".rtos_heap")));
+static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE]; // __attribute__ ((section (".rtos_heap"))) __attribute__((aligned (8)));
+
+
+    *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
+    *ppxIdleTaskStackBuffer = uxIdleTaskStack;
+    *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+}
+
+void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint16_t *pusTimerTaskStackSize )
+{
+/* The buffers used by the Timer/Daemon task must be static so they are
+persistent, and so exist after this function returns. */
+static StaticTask_t xTimerTaskTCB;
+static StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
+
+	/* configUSE_STATIC_ALLOCATION is set to 1, so the application has the
+	opportunity to supply the buffers that will be used by the Timer/RTOS daemon
+	task as its	stack and to hold its TCB.  If these are set to NULL then the
+	buffers will be allocated dynamically, just as if xTaskCreate() had been
+	called. */
+	*ppxTimerTaskTCBBuffer = &xTimerTaskTCB;
+	*ppxTimerTaskStackBuffer = uxTimerTaskStack;
+	*pusTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH; /* In words.  NOT in bytes! */
+}
+
+#endif
 

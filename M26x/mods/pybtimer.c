@@ -76,10 +76,10 @@ STATIC const struct {
 #define M26X_MAX_TIMER_INST 4
 
 STATIC pyb_timer_obj_t pyb_timer_obj[M26X_MAX_TIMER_INST] = {
-    {{&pyb_timer_type}, 0, 0, TIMER0, TMR0_IRQn, NULL, NULL},
-    {{&pyb_timer_type}, 1, 0, TIMER1, TMR1_IRQn, NULL, NULL},
-    {{&pyb_timer_type}, 2, 0, TIMER2, TMR2_IRQn, NULL, NULL},
-    {{&pyb_timer_type}, 3, 0, TIMER3, TMR3_IRQn, NULL, NULL},
+    {{&pyb_timer_type}, 0, 0, TIMER0, TMR0_IRQn, mp_const_none, NULL},
+    {{&pyb_timer_type}, 1, 0, TIMER1, TMR1_IRQn, mp_const_none, NULL},
+    {{&pyb_timer_type}, 2, 0, TIMER2, TMR2_IRQn, mp_const_none, NULL},
+    {{&pyb_timer_type}, 3, 0, TIMER3, TMR3_IRQn, mp_const_none, NULL},
 };
 
 
