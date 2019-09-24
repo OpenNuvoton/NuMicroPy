@@ -377,7 +377,7 @@ void Handle_UART_Irq(int32_t i32UartID , uint32_t u32Status)
         while(UART_IS_RX_READY(self->uart))
         {
 			/* Get the character from UART Buffer */
-            u8InChar = UART_READ(UART0);
+            u8InChar = UART_READ(self->uart);
 			if (self->read_buf_len != 0) {
 				uint16_t next_head = (self->read_buf_head + 1) % self->read_buf_len;
 				if (next_head != self->read_buf_tail) {

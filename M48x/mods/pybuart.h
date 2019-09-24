@@ -29,6 +29,5 @@
 
 extern const mp_obj_type_t pyb_uart_type;
 
-extern void Handle_UART_Irq(int32_t i32UartID , uint32_t u32Status);
 
 #endif

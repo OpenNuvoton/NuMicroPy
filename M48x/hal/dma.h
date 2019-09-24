@@ -43,7 +43,21 @@ typedef enum {
 int dma_channel_allocate(uint32_t capabilities);
 int dma_channel_free(int channelid);
 void dma_set_handler(int channelid, uint32_t handler, uint32_t id, uint32_t event);
+void dma_unset_handler(int channelid);
+
 PDMA_T *dma_modbase(void);
+int dma_untransfer_bytecount(int channelid);
+
+int dma_fill_description(
+	int channelid, 
+	uint32_t u32Peripheral, 
+	uint32_t data_width, 
+	uint32_t addr_src, 
+	uint32_t addr_dst, 
+	int32_t length, 
+	uint32_t timeout 
+);
+
 
 void Handle_PDMA_Irq(void);
 

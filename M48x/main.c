@@ -26,6 +26,7 @@
 #include "mods/pybflash.h"
 #include "mods/pybsdcard.h"
 #include "mods/pybpin.h"
+#include "mods/modnetwork.h"
 #include "hal/pin_int.h"
 #include "hal/M48x_USBD.h"
 #include "hal/MSC_Trans.h"
@@ -323,6 +324,10 @@ soft_reset:
         mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_flash_slash_lib));
     }
 
+#if MICROPY_PY_NETWORK
+    mod_network_init();
+#endif
+
 	// initialise peripherals
 	//    machine_pins_init();
 
@@ -360,7 +365,6 @@ soft_reset:
 }
 
 
-
 int main (void)
 {
 	/* Unlock protected registers */
@@ -393,9 +397,10 @@ int main (void)
 
 #if MICROPY_PY_THREAD
 	TaskHandle_t mpTaskHandle;
-	
+
     mpTaskHandle = xTaskCreateStatic(mp_task, "MicroPy",
         MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, mp_task_stack, &mp_task_tcb);
+
     if (mpTaskHandle == NULL){
 		__fatal_error("FreeRTOS create mp task!");
 	}

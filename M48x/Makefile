@@ -42,6 +42,11 @@ SSL_AXTLS_INCLUDE = lib/axtls
 CFLAGS_MOD += -DMICROPY_SSL_AXTLS=1 -DMICROPY_PY_USSL=1 -DMICROPY_PY_UCRYPTOLIB=1 -I$(SSL_AXTLS_INCLUDE)/ssl -I$(SSL_AXTLS_INCLUDE)/crypto -I$(TOP)/extmod/axtls-include
 endif
 
+ifeq ($(MICROPY_WLAN_ESP8266),1)
+WLAN_ESP8266_INCLUDE = lib/ESP_AT_Lib/src/include
+CFLAGS_MOD += -DMICROPY_WLAN_ESP8266=1 -I$(WLAN_ESP8266_INCLUDE)
+endif
+
 ifeq ($(CROSS), 1)
 CROSS_COMPILE = arm-none-eabi-
 endif
@@ -92,6 +97,11 @@ SRC_C = \
 	$(BUILD)/_frozen_mpy.c \
 	$(wildcard boards/$(BOARD)/*.c)
 
+#	ESP8266_test.c \
+#	ESP8266_test_netconn_client.c \
+#	ESP8266_test_netconn_server.c \
+
+
 
 SRC_LIB_C = $(addprefix lib/,\
 	utils/pyexec.c \
@@ -120,6 +130,7 @@ SRC_MODS_C = $(addprefix mods/,\
 	pybspi.c \
 	pybadc.c \
 	networklan.c \
+	network_esp8266.c \
 	modsocket.c \
 	pybrtc.c \
 	modutime.c \
@@ -262,6 +273,40 @@ SRC_AXTLS_C = $(addprefix lib/axtls/,\
 
 endif
 
+ifeq ($(MICROPY_WLAN_ESP8266),1)
+SRC_ESP8266_C = $(addprefix lib/ESP_AT_Lib/src/,\
+	api/esp_netconn.c \
+	esp/esp_ap.c \
+	esp/esp_buff.c \
+	esp/esp.c \
+	esp/esp_cli.c \
+	esp/esp_conn.c \
+	esp/esp_debug.c \
+	esp/esp_dhcp.c \
+	esp/esp_dns.c \
+	esp/esp_evt.c \
+	esp/esp_hostname.c \
+	esp/esp_input.c \
+	esp/esp_int.c \
+	esp/esp_mdns.c \
+	esp/esp_mem.c \
+	esp/esp_parser.c \
+	esp/esp_pbuf.c \
+	esp/esp_ping.c \
+	esp/esp_sntp.c \
+	esp/esp_sta.c \
+	esp/esp_threads.c \
+	esp/esp_timeout.c \
+	esp/esp_unicode.c \
+	esp/esp_utils.c \
+	esp/esp_wps.c \
+	system/esp_sys_freertos_os.c \
+	system/esp_ll_m48x.c \
+	)
+	
+endif
+
+
 ifeq ($(MICROPY_NVT_LWIP),1)
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/lwIP/src/include -Ilwip-port/include
 CFLAGS += -DMICROPY_NVT_LWIP=1
@@ -322,6 +367,7 @@ SRC_HAL_C = $(addprefix hal/,\
 	MSC_Desc.c \
 	MSC_Trans.c \
 	StorIF_Flash.c \
+	M48x_UART.c \
 	)
 
 OBJ =
@@ -343,6 +389,9 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_AXTLS_C:.c=.o))
 endif
 ifeq ($(MICROPY_NVT_LWIP),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_LWIP_C:.c=.o))
+endif
+ifeq ($(MICROPY_WLAN_ESP8266),1)
+OBJ += $(addprefix $(BUILD)/, $(SRC_ESP8266_C:.c=.o))
 endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_HAL_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_O))

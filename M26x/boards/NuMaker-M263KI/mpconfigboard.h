@@ -1,3 +1,4 @@
+#define MICROPY_HW_BOARD_NAME "NuMaker-M263KI"
 
 // I2C busses
 #define MICROPY_HW_I2C0_SCL (pin_C1) //SCL

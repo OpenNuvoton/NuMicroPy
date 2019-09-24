@@ -30,12 +30,47 @@
 #include "py/mphal.h"
 #include "modnetwork.h"
 
+/// \module network - network configuration
+///
+/// This module provides network drivers and routing configuration.
 
+void mod_network_init(void) {
+    mp_obj_list_init(&MP_STATE_PORT(mod_network_nic_list), 0);
+}
+
+void mod_network_deinit(void) {
+}
+
+void mod_network_register_nic(mp_obj_t nic) {
+    for (mp_uint_t i = 0; i < MP_STATE_PORT(mod_network_nic_list).len; i++) {
+        if (MP_STATE_PORT(mod_network_nic_list).items[i] == nic) {
+            // nic already registered
+            return;
+        }
+    }
+    // nic not registered so add to list
+    mp_obj_list_append(MP_OBJ_FROM_PTR(&MP_STATE_PORT(mod_network_nic_list)), nic);
+}
+
+mp_obj_t mod_network_find_nic(const uint8_t *ip) {
+    // find a NIC that is suited to given IP address
+    for (mp_uint_t i = 0; i < MP_STATE_PORT(mod_network_nic_list).len; i++) {
+        mp_obj_t nic = MP_STATE_PORT(mod_network_nic_list).items[i];
+        // TODO check IP suitability here
+        //mod_network_nic_type_t *nic_type = (mod_network_nic_type_t*)mp_obj_get_type(nic);
+        return nic;
+    }
+
+    nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "no available NIC"));
+}
 
 STATIC const mp_rom_map_elem_t mp_module_network_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),	MP_ROM_QSTR(MP_QSTR_network) },
 #if MICROPY_NVT_LWIP
-    { MP_ROM_QSTR(MP_QSTR_LAN),			MP_ROM_PTR(&mod_network_nic_type_lan) },
+    { MP_ROM_QSTR(MP_QSTR_LAN),		MP_ROM_PTR(&mod_network_nic_type_lan) },
+#endif
+#if MICROPY_WLAN_ESP8266
+    { MP_ROM_QSTR(MP_QSTR_WLAN),	MP_ROM_PTR(&mod_network_nic_type_esp8266) },
 #endif
 
 };

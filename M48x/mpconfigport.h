@@ -118,6 +118,12 @@
 
 #define MICROPY_PY_MACHINE          (1)
 
+#if MICROPY_NVT_LWIP || MICROPY_WLAN_ESP8266
+#define MICROPY_PY_NETWORK           (1)
+#else
+#define MICROPY_PY_NETWORK           (0)
+#endif
+
 #ifndef MICROPY_PY_THREAD
 #define MICROPY_PY_THREAD           (0)
 #endif
@@ -161,14 +167,14 @@ extern const struct _mp_obj_module_t mp_module_usocket;
 extern const struct _mp_obj_module_t mp_module_utime;
 extern const struct _mp_obj_module_t mp_module_uos;
 
-#if MICROPY_NVT_LWIP
+
+#if MICROPY_PY_NETWORK
 #define NETWORK_BUILTIN_MODULE              \
 	{ MP_ROM_QSTR(MP_QSTR_network), MP_ROM_PTR(&mp_module_network) }, \
 	{ MP_ROM_QSTR(MP_QSTR_usocket), MP_ROM_PTR(&mp_module_usocket) },
 #else
 #define NETWORK_BUILTIN_MODULE
 #endif
-
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_umachine), (mp_obj_t)&machine_module }, \
@@ -200,7 +206,6 @@ extern const struct _mp_obj_module_t mp_module_uos;
 // We need to provide a declaration/definition of alloca()
 #include <alloca.h>
 
-#define MICROPY_HW_BOARD_NAME "NuMaker-PFN-M487"
 #define MICROPY_HW_MCU_NAME "Nuvoton-M48x"
 
 #ifdef __linux__
@@ -221,6 +226,9 @@ extern const struct _mp_obj_module_t mp_module_uos;
     mp_obj_t pin_class_map_dict; \
     \
     mp_obj_t pyb_extint_callback[PYB_EXTI_NUM_VECTORS]; \
+    /* list of registered NICs */ \
+    mp_obj_list_t mod_network_nic_list; \
+
     
 
 // We have inlined IRQ functions for efficiency (they are generally

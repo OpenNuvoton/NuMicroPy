@@ -4,14 +4,19 @@ import pyb
 
 pins = [pyb.Pin('SW2', pyb.Pin.IN), pyb.Pin('SW3', pyb.Pin.IN)]
 
-lan = network.LAN()
-lan.ifconfig(('192.168.0.4', '255.255.255.0', '192.168.0.1', '192.168.0.1'));
+netif = 'WLAN'
 
-#while True:
-#	if(lan.ifconfig("dhcp") == True):
-#		break
+if netif == "LAN":
+	lan = network.LAN()
 
-lan.ifconfig()
+	while True:
+		if(lan.ifconfig("dhcp") == True):
+			break
+	print(lan.ifconfig())
+else:
+	wlan = network.WLAN()
+	wlan.connect("NT_ZY", "12345678")
+	print(wlan.ifconfig())
 
 html = """<!DOCTYPE html>
 <html>

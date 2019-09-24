@@ -1,4 +1,6 @@
 
+#define MICROPY_HW_BOARD_NAME "NuMaker-IOT-M487"
+
 // I2C busses
 #define MICROPY_HW_I2C0_SCL (pin_G0)
 #define MICROPY_HW_I2C0_SDA (pin_G1)

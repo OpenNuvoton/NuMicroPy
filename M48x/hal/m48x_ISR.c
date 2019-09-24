@@ -72,13 +72,13 @@
 #include "mods/pybpin.h"
 #include "mods/pybirq.h"
 #include "mods/pybtimer.h"
-#include "mods/pybuart.h"
 #include "mods/pybcan.h"
 #include "mods/pybpwm.h"
 #include "hal/pin_int.h"
 #include "hal/M48x_I2C.h"
 #include "hal/M48x_SPI.h"
 #include "hal/M48x_USBD.h"
+#include "hal/M48x_UART.h"
 #include "hal/dma.h"
 
 /**
@@ -511,120 +511,46 @@ void TMR3_IRQHandler(void)
 /*---------------------------------------------------------------------------------------------------------*/
 void UART0_IRQHandler(void)
 {
-	uint32_t u32Status;
-
 	IRQ_ENTER(UART0_IRQn);
-	u32Status = UART0->INTSTS;
-
-	if(u32Status)
-		Handle_UART_Irq(0, u32Status);
-
-    if(UART0->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
-    {
-        UART0->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
-    }
-
+	Handle_UART_Irq(UART0);
 	IRQ_EXIT(UART0_IRQn);
 }
 
 void UART1_IRQHandler(void)
 {
-	uint32_t u32Status;
-
 	IRQ_ENTER(UART1_IRQn);
-	u32Status = UART1->INTSTS;
-
-
-	if(u32Status)
-		Handle_UART_Irq(1, u32Status);
-
-
-    if(UART1->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
-    {
-        UART1->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
-    }
-
+	Handle_UART_Irq(UART1);
 	IRQ_EXIT(UART1_IRQn);
 
 }
 
 void UART2_IRQHandler(void)
 {
-	uint32_t u32Status;
-
 	IRQ_ENTER(UART2_IRQn);
-	u32Status = UART2->INTSTS;
-
-	if(u32Status)
-		Handle_UART_Irq(2, u32Status);
-
-
-    if(UART2->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
-    {
-        UART2->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
-    }
-
+	Handle_UART_Irq(UART2);
 	IRQ_EXIT(UART2_IRQn);
-
 }
 
 void UART3_IRQHandler(void)
 {
-	uint32_t u32Status;
-
 	IRQ_ENTER(UART3_IRQn);
-	u32Status = UART3->INTSTS;
-
-	if(u32Status)
-		Handle_UART_Irq(3, u32Status);
-
-
-    if(UART3->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
-    {
-        UART3->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
-    }
-
+	Handle_UART_Irq(UART3);
 	IRQ_EXIT(UART3_IRQn);
-
 }
 
 void UART4_IRQHandler(void)
 {
-	uint32_t u32Status;
-
 	IRQ_ENTER(UART4_IRQn);
-	u32Status = UART4->INTSTS;
-
-	if(u32Status)
-		Handle_UART_Irq(4, u32Status);
-
-
-    if(UART4->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
-    {
-        UART4->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
-    }
-
+	Handle_UART_Irq(UART4);
 	IRQ_EXIT(UART4_IRQn);
 
 }
 
 void UART5_IRQHandler(void)
 {
-	uint32_t u32Status;
-
 	IRQ_ENTER(UART5_IRQn);
-	u32Status = UART5->INTSTS;
-
-	if(u32Status)
-		Handle_UART_Irq(5, u32Status);
-
-    if(UART5->FIFOSTS & (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk))
-    {
-        UART5->FIFOSTS = (UART_FIFOSTS_BIF_Msk | UART_FIFOSTS_FEF_Msk | UART_FIFOSTS_PEF_Msk | UART_FIFOSTS_RXOVIF_Msk);
-    }
-
+	Handle_UART_Irq(UART5);
 	IRQ_EXIT(UART5_IRQn);
-
 }
 
 /**

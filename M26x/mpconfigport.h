@@ -203,7 +203,6 @@ extern const struct _mp_obj_module_t mp_module_uos;
 // We need to provide a declaration/definition of alloca()
 #include <alloca.h>
 
-#define MICROPY_HW_BOARD_NAME "NuMaker-M263KI"
 #define MICROPY_HW_MCU_NAME "Nuvoton-M26x"
 
 #ifdef __linux__
