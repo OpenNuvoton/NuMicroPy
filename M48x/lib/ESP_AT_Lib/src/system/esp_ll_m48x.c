@@ -174,8 +174,23 @@ ESP_UART_DMA_RxDoneCB(
 {
 	uart_t *psUartObj = (uart_t *)pvObj;
 	uint32_t u32TransDateByte = dma_untransfer_bytecount(psUartObj->dma_chn_id_rx);
-	
-	u32TransDateByte = (u32TransDateByte==0)? ESP_UART_DMA_RX_BUFF_SIZE: ESP_UART_DMA_RX_BUFF_SIZE-(u32TransDateByte+1); 
+
+#if 0	
+	if(u32TransDateByte == 0){
+		printf("ESP_UART_DMA_RxDoneCB \n");
+		u32TransDateByte = ESP_UART_DMA_RX_BUFF_SIZE;
+	}
+	else{
+		u32TransDateByte = ESP_UART_DMA_RX_BUFF_SIZE - (u32TransDateByte); 
+	}
+#else
+	if(i32Event & DMA_EVENT_TRANSFER_DONE){
+		u32TransDateByte = ESP_UART_DMA_RX_BUFF_SIZE;
+	}
+	else{
+		u32TransDateByte = ESP_UART_DMA_RX_BUFF_SIZE - (u32TransDateByte); 
+	}
+#endif	
 	
 	if(i32Event & DMA_EVENT_TIMEOUT){
 		//todo restart dma rx
