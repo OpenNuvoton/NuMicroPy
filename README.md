@@ -10,14 +10,15 @@ NuMicroPy is Nuvoton microcontroller porting for MicroPython. MicroPython is a l
 - M48x/ -- M480 series porting of MicroPython
 - M26x/ -- M261 series porting of MicroPython
 - micropython/ -- MicroPython official release(v1.10)
+- ThirdParty/ -- Third party library
 
 ----
 ## Supported target
-Board            |MCU      |ROM size  |RAM size
-:----------------|---------|----------|-------
-NuMaker-PFM-M487 |M487     |362KB     |77KB
-NuMaker-IOT-M487 |M487     |373KB     |77KB
-NuMaker-M263KI   |M263     |266KB     |35KB
+Board            |MCU      |ROM size            |RAM size
+:----------------|---------|--------------------|------------------
+NuMaker-PFM-M487 |M487     |364KB/648KB(W/lvgl) |75KB/79KB(W/lvgl)
+NuMaker-IOT-M487 |M487     |322KB               |46KB
+NuMaker-M263KI   |M263     |266KB               |35KB
 
 ----
 ## How to start NuMicroPy
@@ -87,4 +88,25 @@ cd ../M26x
 #For NuMaker-M263KI board
 make V=1
 ```
+
+----
+## How to run [LittlevGL](https://littlevgl.com/)
+![M487Advance](https://imgur.com/xhgy5ZN.jpg)
+1. Hardware requirement: NuMaker-PFM-M487 + M487 Advance Ver 4.0  
+2. Burn firmware.bin (build/NuMaker-PFM-M487/WithLittlevGL/) to APROM and firmware_spim.bin (build/NuMaker-PFM-M487/WithLittlevGL) to SPI flash  
+a. Execute [NuMicro ICP programming tool](https://www.nuvoton.com/hq/support/tool-and-software/software/programmer/?__locale=en) and connect to target chip(M480 Series)  
+![ICP_Connect](https://imgur.com/nUYJy1M.jpg)  
+b. Check SPIM multi-function pin select to PC2/PC3/PC1/PC0  
+![ICP_SPIM_PIN](https://imgur.com/eTlNyF0.jpg)  
+c. Programming config setting first  
+![ICP_PROG_CONF](https://imgur.com/VCyxxxI.jpg)  
+e. Programming APROM(firmware.bin) and SPI flash(firmware_spim.bin)  
+![ICP_PROG_CODE](https://imgur.com/QJYbj7k.jpg)  
+f. ICP tool disconnect target chip and press NuMaker-PFM-M487 RESET button  
+![ICP_Disconnect](https://imgur.com/U8tTEEi.jpg)  
+![SPIM_TERM](https://imgur.com/C2PEiBH.jpg)  
+3. Please follow "How to start NuMicroPy" section 4. Copy example code(M48x/example/LittlevGL.py) to main.py  
+![LVGL_EXAM](https://imgur.com/3BFyKx4.jpg)  
+![LVGL_TERM](https://imgur.com/8RMKF1F.jpg)  
+
 ----
