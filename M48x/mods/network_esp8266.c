@@ -53,16 +53,12 @@
 #define ESP_RESET_PIN_PORT PH
 #define ESP_RESET_PIN_PIN BIT3
 
-void esp_ll_hardreset(void)
+uint8_t esp_ll_hardreset(uint8_t state)
 {
-#if 0
-	ESP_RESET_PIN = 1;
-	vTaskDelay(100);
-	ESP_RESET_PIN = 0;
-	vTaskDelay(200);
-	ESP_RESET_PIN = 1;
-	vTaskDelay(800);
-#endif
+	GPIO_SetMode(ESP_RESET_PIN_PORT, ESP_RESET_PIN_PIN, GPIO_MODE_OUTPUT);
+	//Hard reset pin, active low
+	ESP_RESET_PIN = ~state;
+	return 1; //Need to return 1
 }
 
 void esp_ll_switch_pin_fun(
@@ -75,17 +71,16 @@ void esp_ll_switch_pin_fun(
 		SYS->GPH_MFPH &= ~(SYS_GPH_MFPH_PH8MFP_Msk | SYS_GPH_MFPH_PH9MFP_Msk);
 		SYS->GPH_MFPH |= (SYS_GPH_MFPH_PH8MFP_UART1_TXD | SYS_GPH_MFPH_PH9MFP_UART1_RXD);
 
-		//CTS/RTS
-		SYS->GPA_MFPL &= ~(SYS_GPA_MFPL_PA0MFP_Msk | SYS_GPA_MFPL_PA1MFP_Msk);
-		SYS->GPA_MFPL |= (SYS_GPA_MFPL_PA1MFP_UART1_nCTS | SYS_GPA_MFPL_PA0MFP_UART1_nRTS);
+        //CTS/RTS
+        SYS->GPB_MFPH &= ~(SYS_GPB_MFPH_PB8MFP_Msk | SYS_GPB_MFPH_PB9MFP_Msk);
+        SYS->GPB_MFPH |= (SYS_GPB_MFPH_PB9MFP_UART1_nCTS | SYS_GPB_MFPH_PB8MFP_UART1_nRTS);
 
 		//Hard reset pin
-		GPIO_SetMode(ESP_RESET_PIN_PORT, ESP_RESET_PIN_PIN, GPIO_MODE_OUTPUT);
-		ESP_RESET_PIN = 1;
+//		GPIO_SetMode(ESP_RESET_PIN_PORT, ESP_RESET_PIN_PIN, GPIO_MODE_OUTPUT);
 	}
 	else{
 		SYS->GPH_MFPH &= ~(SYS_GPH_MFPH_PH8MFP_Msk | SYS_GPH_MFPH_PH9MFP_Msk);
-		SYS->GPA_MFPL &= ~(SYS_GPA_MFPL_PA0MFP_Msk | SYS_GPA_MFPL_PA1MFP_Msk);
+        SYS->GPB_MFPH &= ~(SYS_GPB_MFPH_PB8MFP_Msk | SYS_GPB_MFPH_PB9MFP_Msk);
 		SYS->GPH_MFPL &= ~(SYS_GPH_MFPL_PH3MFP_Msk);
 	}
 }

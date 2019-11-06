@@ -81,6 +81,10 @@
 #include "hal/M48x_UART.h"
 #include "hal/dma.h"
 
+#if MICROPY_LVGL
+#include "lvgl/lvgl.h"
+#endif
+
 /**
  * @brief       GPIO PA IRQ
  *
@@ -289,6 +293,10 @@ void SysTick_Handler(void) {
     // the only place where it can be modified, and the code is more efficient
     // without the volatile specifier.
     uwTick += 1;
+
+#if MICROPY_LVGL
+	lv_tick_inc(1);
+#endif
 
     // Read the systick control regster. This has the side effect of clearing
     // the COUNTFLAG bit, which makes the logic in mp_hal_ticks_us

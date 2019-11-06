@@ -40,6 +40,10 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#if MICROPY_LVGL
+#include "lvgl/lvgl.h"
+#endif
+
 //*****************************************************************************
 //
 //! \brief Application defined idle task hook
@@ -103,5 +107,10 @@ void vApplicationStackOverflowHook (xTaskHandle *pxTask, signed char *pcTaskName
 //*****************************************************************************
 void vApplicationTickHook (void)
 {
+	
+#if MICROPY_LVGL
+	lv_tick_inc(1);
+#endif
+	
 //    HAL_IncrementTick();
 }

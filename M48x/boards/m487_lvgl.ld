@@ -1,9 +1,13 @@
 /* Linker script to configure memory regions. */
+/*  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 0x28000 */   /* without SPIM region 160k */
+
 MEMORY
 {
   FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x60000   /* 384k (512k - 128(PYBFlash disk))*/
-  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 0x28000   /* 160k */
+  FLASH2 (rx) : ORIGIN = 0x08000000, LENGTH = 0x1000000 /* SPIM 16M for LittlevGL*/
+  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 0x20000    /* 128k  */
 }
+
 
 /* Library configurations */
 GROUP(libgcc.a libc.a libm.a libnosys.a)
@@ -51,7 +55,8 @@ SECTIONS
 		__Vectors_Size = __Vectors_End - __Vectors;
 		__end__ = .;
 
-		*(.text*)
+		/* *(.text*) */
+		*(EXCLUDE_FILE(build/../ThirdParty/lv_binding_micropython/lvgl/src/*/*.o build/../M480BSP/ThirdParty/lwIP/src/*/*.o build/build/lvgl/lv_mpy.o) .text*)
 
 		KEEP(*(.init))
 		KEEP(*(.fini))
@@ -70,7 +75,8 @@ SECTIONS
  		*(SORT(.dtors.*))
  		*(.dtors)
 
-		*(.rodata*)
+		/* *(.rodata*) */
+		*(EXCLUDE_FILE(build/../ThirdParty/lv_binding_micropython/lvgl/src/*/*.o build/build/lvgl/lv_mpy.o) .rodata*)
 
 		KEEP(*(.eh_frame*))
 	} > FLASH
@@ -156,6 +162,19 @@ SECTIONS
 		__data_end__ = .;
 
 	} > RAM
+
+	/*. = 0x8000000;*/
+	
+	/*.spim : AT (__exidx_end)*/
+	.spim :
+	{
+		build/../ThirdParty/lv_binding_micropython/lvgl/src/*/*.o(.text*)
+		build/build/lvgl/*.o(.text*)
+		build/../ThirdParty/lv_binding_micropython/lvgl/src/*/*.o(.rodata*)
+		build/build/lvgl/*.o(.rodata*)
+		build/../M480BSP/ThirdParty/lwIP/src/*/*.o(.text*)
+	} > FLASH2
+
 
 	.bss :
 	{

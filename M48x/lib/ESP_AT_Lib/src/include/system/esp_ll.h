@@ -49,7 +49,7 @@ extern "C" {
 espr_t      esp_ll_init(esp_ll_t* ll);
 espr_t      esp_ll_deinit(esp_ll_t* ll);
 
-void		esp_ll_hardreset(void);						//must implement by application for M48x
+uint8_t 	esp_ll_hardreset(uint8_t state);			//must implement by application for M48x
 void		esp_ll_switch_pin_fun(int bUARTMode);		//must implement by application for M48x. bUARTMode=1:Swith pin to UART pin. bUARTMode=1:Swith pin to GPIO pin 
 void*		esp_ll_get_uart_obj(void);					//must implement by application for M48x. Return UART object. Ex: UART1, UART2, ....
 

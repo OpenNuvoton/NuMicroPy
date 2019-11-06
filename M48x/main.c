@@ -66,6 +66,11 @@ void SYS_Init(void)
     /* Select UART clock source from HXT */
     CLK_SetModuleClock(UART0_MODULE, CLK_CLKSEL1_UART0SEL_HXT, CLK_CLKDIV0_UART0(1));
 
+#if ENABLE_SPIM
+    /* Enable SPIM module clock */
+    CLK_EnableModuleClock(SPIM_MODULE);
+#endif
+
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock and cyclesPerUs automatically. */
     SystemCoreClockUpdate();
@@ -78,6 +83,23 @@ void SYS_Init(void)
     /* Set GPH multi-function pins for UART0 RXD and TXD for DAC testing*/
     SYS->GPH_MFPH &= ~(SYS_GPH_MFPH_PH10MFP_Msk | SYS_GPH_MFPH_PH11MFP_Msk);
     SYS->GPH_MFPH |= (SYS_GPH_MFPH_PH10MFP_UART0_TXD | SYS_GPH_MFPH_PH11MFP_UART0_RXD);
+#endif
+
+#if ENABLE_SPIM
+    /* Init SPIM multi-function pins, MOSI(PC.0), MISO(PC.1), CLK(PC.2), SS(PC.3), D3(PC.4), and D2(PC.5) */
+    SYS->GPC_MFPL &= ~(SYS_GPC_MFPL_PC0MFP_Msk | SYS_GPC_MFPL_PC1MFP_Msk | SYS_GPC_MFPL_PC2MFP_Msk |
+                       SYS_GPC_MFPL_PC3MFP_Msk | SYS_GPC_MFPL_PC4MFP_Msk | SYS_GPC_MFPL_PC5MFP_Msk);
+    SYS->GPC_MFPL |= SYS_GPC_MFPL_PC0MFP_SPIM_MOSI | SYS_GPC_MFPL_PC1MFP_SPIM_MISO |
+                     SYS_GPC_MFPL_PC2MFP_SPIM_CLK | SYS_GPC_MFPL_PC3MFP_SPIM_SS |
+                     SYS_GPC_MFPL_PC4MFP_SPIM_D3 | SYS_GPC_MFPL_PC5MFP_SPIM_D2;
+    PC->SMTEN |= GPIO_SMTEN_SMTEN2_Msk;
+
+    /* Set SPIM I/O pins as high slew rate up to 80 MHz. */
+    PC->SLEWCTL = (PC->SLEWCTL & 0xFFFFF000) |
+                  (0x1<<GPIO_SLEWCTL_HSREN0_Pos) | (0x1<<GPIO_SLEWCTL_HSREN1_Pos) |
+                  (0x1<<GPIO_SLEWCTL_HSREN2_Pos) | (0x1<<GPIO_SLEWCTL_HSREN3_Pos) |
+                  (0x1<<GPIO_SLEWCTL_HSREN4_Pos) | (0x1<<GPIO_SLEWCTL_HSREN5_Pos);
+
 #endif
 
 #if !MICROPY_PY_THREAD
@@ -241,7 +263,9 @@ STATIC bool init_sdcard_fs(void) {
 #define MP_TASK_STACK_SIZE      (4 * 1024)
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 
+#ifndef MP_TASK_HEAP_SIZE
 #define MP_TASK_HEAP_SIZE	(16 * 1024)
+#endif
 
 #if MICROPY_PY_THREAD
 STATIC StaticTask_t mp_task_tcb;
@@ -393,6 +417,46 @@ int main (void)
 
 #if MICROPY_HW_ENABLE_RNG
 	PRNG_Open(CRPT, PRNG_KEY_SIZE_64, 1, 0xAA);     // start PRNG with seed 0x55
+#endif
+
+#if ENABLE_SPIM
+
+#define SPIM_CIPHER_ON              0
+#define USE_4_BYTES_MODE            0            /* W25Q20 does not support 4-bytes address mode. */
+
+    uint8_t     idBuf[3];
+
+    SPIM_SET_CLOCK_DIVIDER(1);        /* Set SPIM clock as HCLK divided by 2 */
+
+    SPIM_SET_RXCLKDLY_RDDLYSEL(0);    /* Insert 0 delay cycle. Adjust the sampling clock of received data to latch the correct data. */
+    SPIM_SET_RXCLKDLY_RDEDGE();       /* Use SPI input clock rising edge to sample received data. */
+
+    SPIM_SET_DCNUM(8);                /* 8 is the default value. */
+
+    if (SPIM_InitFlash(1) != 0)        /* Initialized SPI flash */
+    {
+        __fatal_error("SPIM flash initialize failed!\n");
+    }
+
+    SPIM_ReadJedecId(idBuf, sizeof (idBuf), 1);
+    printf("SPIM get JEDEC ID=0x%02X, 0x%02X, 0x%02X\n", idBuf[0], idBuf[1], idBuf[2]);
+
+    SPIM_DISABLE_CCM();
+
+    //SPIM_DISABLE_CACHE();
+    SPIM_ENABLE_CACHE();
+
+    if (SPIM_CIPHER_ON)
+        SPIM_ENABLE_CIPHER();
+    else
+        SPIM_DISABLE_CIPHER();
+
+    SPIM_Enable_4Bytes_Mode(USE_4_BYTES_MODE, 1);
+
+    SPIM->CTL1 |= SPIM_CTL1_CDINVAL_Msk;        // invalid cache
+
+    SPIM_EnterDirectMapMode(USE_4_BYTES_MODE, CMD_DMA_FAST_READ, 0);
+
 #endif
 
 #if MICROPY_PY_THREAD

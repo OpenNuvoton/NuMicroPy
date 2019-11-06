@@ -7,3 +7,6 @@
 [submodule "M261BSP"]
 	path = M261BSP
 	url = https://github.com/OpenNuvoton/M261BSP.git
+[submodule "ThirdParty/lv_binding_micropython"]
+	path = ThirdParty/lv_binding_micropython
+	url = https://github.com/littlevgl/lv_binding_micropython.git

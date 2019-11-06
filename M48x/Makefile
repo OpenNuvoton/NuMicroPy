@@ -1,6 +1,7 @@
 #Setup micropython and M480 BSP path
 MICROPY_SRC_PATH = ../micropython
 M480_BSP_PATH = ../M480BSP
+THIRD_PARTY_PATH = ../ThirdParty
 
 # Select the board to build for: if not given on the command line,
 # then default to PYBV10.
@@ -11,10 +12,11 @@ $(error Invalid BOARD specified)
 endif
 
 # If the build directory is not given, make it reflect the board name.
-BUILD ?= build-$(BOARD)
+#BUILD ?= build-$(BOARD)
+BUILD ?= build
 
 #Extra clean directory
-CLEAN_EXTRA = M480BSP
+CLEAN_EXTRA = M480BSP ThirdParty yacctab.py lextab.py
 
 -include mpconfigport.mk
 include $(MICROPY_SRC_PATH)/py/mkenv.mk
@@ -46,6 +48,20 @@ ifeq ($(MICROPY_WLAN_ESP8266),1)
 WLAN_ESP8266_INCLUDE = lib/ESP_AT_Lib/src/include
 CFLAGS_MOD += -DMICROPY_WLAN_ESP8266=1 -I$(WLAN_ESP8266_INCLUDE)
 endif
+
+ifeq ($(MICROPY_LVGL),1)
+LVGL_BINDING_DIR = $(THIRD_PARTY_PATH)/lv_binding_micropython
+LVGL_DIR = $(LVGL_BINDING_DIR)/lvgl
+#LVGL_GENERIC_DRV_DIR = $(LVGL_BINDING_DIR)/driver/generic
+LVGL_INCLUDE = $(LVGL_BINDING_DIR)
+#ALL_LVGL_SRC = $(shell find $(LVGL_DIR) -type f) $(LVGL_BINDING_DIR)/lv_conf.h
+LVGL_PP = $(BUILD)/lvgl/lvgl.pp.c
+LVGL_MPY = $(BUILD)/lvgl/lv_mpy.c
+LVGL_MPY_METADATA = $(BUILD)/lvgl/lv_mpy.json
+QSTR_GLOBAL_DEPENDENCIES += $(LVGL_MPY)
+CFLAGS_MOD += -DMP_TASK_HEAP_SIZE=16384 -DMICROPY_LVGL=1 -DENABLE_SPIM -I$(LVGL_INCLUDE)
+endif
+
 
 ifeq ($(CROSS), 1)
 CROSS_COMPILE = arm-none-eabi-
@@ -97,12 +113,6 @@ SRC_C = \
 	$(BUILD)/_frozen_mpy.c \
 	$(wildcard boards/$(BOARD)/*.c)
 
-#	ESP8266_test.c \
-#	ESP8266_test_netconn_client.c \
-#	ESP8266_test_netconn_server.c \
-
-
-
 SRC_LIB_C = $(addprefix lib/,\
 	utils/pyexec.c \
 	libc/string0.c \
@@ -147,6 +157,8 @@ SRC_MODS_C = $(addprefix mods/,\
 	pybpwm.c \
 	pybwdt.c \
 	pybaccel.c \
+	modILI9341.c \
+	modTouchADC.c \
 	)
 
 SRC_O = \
@@ -177,6 +189,8 @@ SRC_BSP_DRIVER_C = $(addprefix $(M48XBSP_LIB)/StdDriver/src/,\
 	bpwm.c \
 	epwm.c \
 	wdt.c \
+	spim.c \
+	ebi.c \
 	)
 
 ifeq ($(MICROPY_PY_THREAD),1)
@@ -189,8 +203,11 @@ SRC_RTOS_C = $(addprefix $(M48XBSP_THIRD_PARTY)/FreeRTOS/Source/,\
 	tasks.c \
 	timers.c \
 	portable/GCC/ARM_CM4F/port.c \
-	portable/MemMang/heap_4.c \
+	portable/MemMang/heap_3.c \
 	)
+
+#	portable/MemMang/heap_3.c uses CRTL malloc
+#	portable/MemMang/heap_4.c allocate static memory pool
 
 endif
 
@@ -370,6 +387,92 @@ SRC_HAL_C = $(addprefix hal/,\
 	M48x_UART.c \
 	)
 
+ifeq ($(MICROPY_LVGL),1)
+SRC_LVGL_C = $(LVGL_MPY)
+SRC_LVGL_C += $(addprefix $(LVGL_DIR)/src/,\
+	lv_core/lv_disp.c \
+	lv_core/lv_group.c \
+	lv_core/lv_indev.c \
+	lv_core/lv_obj.c \
+	lv_core/lv_refr.c \
+	lv_core/lv_style.c \
+	lv_draw/lv_draw.c \
+	lv_draw/lv_draw_arc.c \
+	lv_draw/lv_draw_basic.c \
+	lv_draw/lv_draw_img.c \
+	lv_draw/lv_draw_label.c \
+	lv_draw/lv_draw_line.c \
+	lv_draw/lv_draw_rect.c \
+	lv_draw/lv_draw_triangle.c \
+	lv_draw/lv_img_cache.c \
+	lv_draw/lv_img_decoder.c \
+	lv_font/lv_font.c \
+	lv_font/lv_font_fmt_txt.c \
+	lv_font/lv_font_roboto_12.c \
+	lv_font/lv_font_roboto_16.c \
+	lv_font/lv_font_roboto_22.c \
+	lv_font/lv_font_roboto_28.c \
+	lv_font/lv_font_unscii_8.c \
+	lv_hal/lv_hal_disp.c \
+	lv_hal/lv_hal_indev.c \
+	lv_hal/lv_hal_tick.c \
+	lv_misc/lv_anim.c \
+	lv_misc/lv_area.c \
+	lv_misc/lv_async.c \
+	lv_misc/lv_circ.c \
+	lv_misc/lv_color.c \
+	lv_misc/lv_fs.c \
+	lv_misc/lv_gc.c \
+	lv_misc/lv_ll.c \
+	lv_misc/lv_log.c \
+	lv_misc/lv_math.c \
+	lv_misc/lv_mem.c \
+	lv_misc/lv_task.c \
+	lv_misc/lv_txt.c \
+	lv_misc/lv_utils.c \
+	lv_objx/lv_arc.c \
+	lv_objx/lv_bar.c \
+	lv_objx/lv_btn.c \
+	lv_objx/lv_btnm.c \
+	lv_objx/lv_calendar.c \
+	lv_objx/lv_canvas.c \
+	lv_objx/lv_cb.c \
+	lv_objx/lv_chart.c \
+	lv_objx/lv_cont.c \
+	lv_objx/lv_ddlist.c \
+	lv_objx/lv_gauge.c \
+	lv_objx/lv_img.c \
+	lv_objx/lv_imgbtn.c \
+	lv_objx/lv_kb.c \
+	lv_objx/lv_label.c \
+	lv_objx/lv_led.c \
+	lv_objx/lv_line.c \
+	lv_objx/lv_list.c \
+	lv_objx/lv_lmeter.c \
+	lv_objx/lv_mbox.c \
+	lv_objx/lv_page.c \
+	lv_objx/lv_preload.c \
+	lv_objx/lv_roller.c \
+	lv_objx/lv_slider.c \
+	lv_objx/lv_spinbox.c \
+	lv_objx/lv_sw.c \
+	lv_objx/lv_ta.c \
+	lv_objx/lv_table.c \
+	lv_objx/lv_tabview.c \
+	lv_objx/lv_tileview.c \
+	lv_objx/lv_win.c \
+	lv_themes/lv_theme.c \
+	lv_themes/lv_theme_alien.c \
+	lv_themes/lv_theme_default.c \
+	lv_themes/lv_theme_material.c \
+	lv_themes/lv_theme_mono.c \
+	lv_themes/lv_theme_nemo.c \
+	lv_themes/lv_theme_night.c \
+	lv_themes/lv_theme_templ.c \
+	lv_themes/lv_theme_zen.c \
+	)
+endif
+
 OBJ =
 OBJ += $(PY_O)
 OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
@@ -393,6 +496,9 @@ endif
 ifeq ($(MICROPY_WLAN_ESP8266),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_ESP8266_C:.c=.o))
 endif
+ifeq ($(MICROPY_LVGL),1)
+OBJ += $(addprefix $(BUILD)/, $(SRC_LVGL_C:.c=.o))
+endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_HAL_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_O))
 OBJ += $(BUILD)/pins_$(BOARD).o
@@ -410,10 +516,16 @@ $(BUILD)/firmware.elf: $(OBJ)
 	$(Q)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 	$(Q)$(SIZE) $@
 
+#$(Q)$(OBJCOPY) -O binary -j .isr_vector -j .text -j .data -R .spim $^ $(BUILD)/firmware.bin
 $(BUILD)/firmware.bin: $(BUILD)/firmware.elf
-	$(Q)$(OBJCOPY) -O binary -j .isr_vector -j .text -j .data $^ $(BUILD)/firmware.bin
+	$(Q)$(OBJCOPY) -O binary -j .text -j .data $^ $(BUILD)/firmware.bin
+	$(Q)$(OBJCOPY) -O binary -j .spim $^ $(BUILD)/firmware_spim.bin
+ifeq ($(MICROPY_LVGL),1)
+	cp $(BUILD)/firmware.bin ../build/$(BOARD)/WithLittlevGL/
+	cp $(BUILD)/firmware_spim.bin ../build/$(BOARD)/WithLittlevGL/
+else
 	cp $(BUILD)/firmware.bin ../build/$(BOARD)/
-
+endif
 test: $(BUILD)/firmware.elf
 	$(Q)/bin/echo -e "print('hello world!', list(x+1 for x in range(10)), end='eol\\\\n')\\r\\n\\x04" | $(BUILD)/firmware.elf | tail -n2 | grep "^hello world! \\[1, 2, 3, 4, 5, 6, 7, 8, 9, 10\\]eol"
 
@@ -434,6 +546,9 @@ GEN_PINS_AF_CONST = $(HEADER_BUILD)/pins_af_const.h
 # which source files might need it.
 $(OBJ): | $(GEN_PINS_HDR)
 
+ifeq ($(MICROPY_LVGL),1)
+$(OBJ): | $(LVGL_MPY)
+endif
 # With conditional pins, we may need to regenerate qstrdefs.h when config
 # options change.
 #$(HEADER_BUILD)/qstrdefs.generated.h: boards/$(BOARD)/mpconfigboard.h
@@ -444,6 +559,12 @@ $(OBJ): | $(GEN_PINS_HDR)
 $(GEN_PINS_SRC) $(GEN_PINS_HDR) $(GEN_PINS_QSTR) $(GEN_PINS_AF_CONST): $(BOARD_PINS) $(MAKE_PINS) $(AF_FILE) $(PREFIX_FILE) | $(HEADER_BUILD)
 	$(ECHO) "GEN $@"
 	$(Q)$(PYTHON) $(MAKE_PINS) --board $(BOARD_PINS) --af $(AF_FILE) --af-const $(GEN_PINS_AF_CONST) --prefix $(PREFIX_FILE) --hdr $(GEN_PINS_HDR) --qstr $(GEN_PINS_QSTR) > $(GEN_PINS_SRC)
+
+$(LVGL_MPY): $(ALL_LVGL_SRC) $(LVGL_BINDING_DIR)/gen/gen_mpy.py 
+	$(ECHO) "LVGL-GEN $@"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(CPP) $(LV_CFLAGS) -I $(LVGL_BINDING_DIR)/pycparser/utils/fake_libc_include $(INC) $(LVGL_DIR)/lvgl.h > $(LVGL_PP)
+	$(Q)$(PYTHON) $(LVGL_BINDING_DIR)/gen/gen_mpy.py -M lvgl -MP lv -MD $(LVGL_MPY_METADATA) -E $(LVGL_PP) $(LVGL_DIR)/lvgl.h > $@
 
 $(BUILD)/pins_$(BOARD).o: $(BUILD)/pins_$(BOARD).c
 	$(call compile_c)

@@ -167,6 +167,11 @@ extern const struct _mp_obj_module_t mp_module_usocket;
 extern const struct _mp_obj_module_t mp_module_utime;
 extern const struct _mp_obj_module_t mp_module_uos;
 
+//littlevgl modules
+extern const struct _mp_obj_module_t mp_module_lvgl;
+extern const struct _mp_obj_module_t mp_module_ILI9341;
+extern const struct _mp_obj_module_t mp_module_TouchADC;
+
 
 #if MICROPY_PY_NETWORK
 #define NETWORK_BUILTIN_MODULE              \
@@ -176,13 +181,31 @@ extern const struct _mp_obj_module_t mp_module_uos;
 #define NETWORK_BUILTIN_MODULE
 #endif
 
+#if MICROPY_LVGL
+#include "lvgl/src/lv_misc/lv_gc.h"
+// TODO: [MUST] by chchen59
+//    { MP_OBJ_NEW_QSTR(MP_QSTR_lvindev), (mp_obj_t)&mp_module_lvindev},
+//    { MP_OBJ_NEW_QSTR(MP_QSTR_SDL), (mp_obj_t)&mp_module_SDL },
+//    { MP_OBJ_NEW_QSTR(MP_QSTR_lodepng), (mp_obj_t)&mp_module_lodepng },
+
+#define MICROPY_PY_LVGL_DEF \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_lvgl), (mp_obj_t)&mp_module_lvgl }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_ILI9341), (mp_obj_t)&mp_module_ILI9341 }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_TouchADC), (mp_obj_t)&mp_module_TouchADC },
+#else
+#define LV_ROOTS 
+#define MICROPY_PY_LVGL_DEF 
+#endif
+
+
+
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_umachine), (mp_obj_t)&machine_module }, \
     { MP_ROM_QSTR(MP_QSTR_pyb), MP_ROM_PTR(&pyb_module) }, \
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
     { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
     NETWORK_BUILTIN_MODULE \
-
+    MICROPY_PY_LVGL_DEF \
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
     { MP_ROM_QSTR(MP_QSTR_binascii), MP_ROM_PTR(&mp_module_ubinascii) }, \
@@ -221,6 +244,8 @@ extern const struct _mp_obj_module_t mp_module_uos;
 
 #define MICROPY_PORT_ROOT_POINTERS \
     const char *readline_hist[8]; \
+    LV_ROOTS \
+    void *mp_lv_user_data; \
     \
     mp_obj_t pin_class_mapper; \
     mp_obj_t pin_class_map_dict; \
@@ -228,7 +253,6 @@ extern const struct _mp_obj_module_t mp_module_uos;
     mp_obj_t pyb_extint_callback[PYB_EXTI_NUM_VECTORS]; \
     /* list of registered NICs */ \
     mp_obj_list_t mod_network_nic_list; \
-
     
 
 // We have inlined IRQ functions for efficiency (they are generally
