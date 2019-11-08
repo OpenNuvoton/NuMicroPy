@@ -16,7 +16,7 @@ NuMicroPy is Nuvoton microcontroller porting for MicroPython. MicroPython is a l
 ## Supported target
 Board            |MCU      |ROM size            |RAM size
 :----------------|---------|--------------------|------------------
-NuMaker-PFM-M487 |M487     |364KB/648KB(W/lvgl) |75KB/79KB(W/lvgl)
+NuMaker-PFM-M487 |M487     |364KB/648KB(W/lvgl) |75KB/91KB(W/lvgl)
 NuMaker-IOT-M487 |M487     |322KB               |46KB
 NuMaker-M263KI   |M263     |266KB               |35KB
 
