@@ -20,7 +20,7 @@ NuMaker-PFM-M487 |M487     |364KB/648KB(W/lvgl)   |75KB/123KB(W/lvgl)
 NuMaker-IOT-M487 |M487     |322KB                 |46KB
 NuMaker-M263KI   |M263     |266KB                 |35KB
 
-LittlevGL required RAM size 124KB = 91KB + 32KB(SPIM cache)
+LittlevGL required RAM size 123KB = 91KB + 32KB(SPIM cache)
 
 ----
 ## How to start NuMicroPy
