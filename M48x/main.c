@@ -264,7 +264,7 @@ STATIC bool init_sdcard_fs(void) {
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 
 #ifndef MP_TASK_HEAP_SIZE
-#define MP_TASK_HEAP_SIZE	(16 * 1024)
+#define MP_TASK_HEAP_SIZE	(28 * 1024)
 #endif
 
 #if MICROPY_PY_THREAD

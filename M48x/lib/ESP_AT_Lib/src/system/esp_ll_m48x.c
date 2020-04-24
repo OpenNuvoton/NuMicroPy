@@ -47,8 +47,8 @@
 #include "esp/esp_input.h"
 #include "system/esp_ll.h"
 
-//#include "FreeRTOS.h"
-//#include "task.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #include "NuMicro.h"
 #include "hal/M48x_UART.h"
@@ -312,7 +312,8 @@ static int configure_uart(
  */
 static size_t
 send_data(const void* data, size_t len) {
-	
+
+	vTaskDelay(1);
 	if(UART_DMA_TX_Start(&s_sUARTObj, (uint8_t *)data, len) == 0){
 		//Wait trans done
 		void *pvMsg;

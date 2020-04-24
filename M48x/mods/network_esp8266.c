@@ -201,6 +201,15 @@ STATIC mp_obj_t esp8266_make_new(const mp_obj_type_t *type, size_t n_args, size_
         nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "failed to init ESP8266 module"));
     }
 
+#if 1
+	#define DEF_SPEED_UP	(115200)
+	/* Set baudrate to DEF_SPEED_UP and enable flow-control function. */
+	if ( esp_set_at_baudrate(DEF_SPEED_UP, NULL, NULL, 1)  != espOK) 
+	{
+		printf("Cannot set baudrate to %d!\r\n", DEF_SPEED_UP);
+	}
+#endif
+
     esp_evt_register(access_points_cb);         /* Register access points */	
 
     // register with network module
