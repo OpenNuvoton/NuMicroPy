@@ -24,12 +24,13 @@
 
 #include "mpconfigboard_common.h"
 #include "mods/pybflash.h"
+#include "mods/pybspiflash.h"
 #include "mods/pybsdcard.h"
 #include "mods/pybpin.h"
 #include "mods/modnetwork.h"
 #include "hal/pin_int.h"
 #include "hal/M48x_USBD.h"
-#include "hal/MSC_Trans.h"
+#include "hal/MSC_VCPTrans.h"
 #include "hal/StorIF.h"
 
 #include "misc/mperror.h"
@@ -37,7 +38,6 @@
 extern mp_uint_t gc_helper_get_sp(void);
 extern mp_uint_t gc_helper_get_regs_and_sp(mp_uint_t *regs);
 
-static fs_user_mount_t s_sflash_vfs_fat;
 
 void SYS_Init(void)
 {
@@ -122,6 +122,10 @@ static const char fresh_boot_py[] =
 "#pyb.main('main.py') # main script to run after this one\r\n"
 ;
 
+#if MICROPY_HW_HAS_FLASH
+
+static fs_user_mount_t s_sflash_vfs_fat;
+
 STATIC bool init_flash_fs(void){
     // init the vfs object
     fs_user_mount_t *vfs_fat = &s_sflash_vfs_fat;
@@ -190,6 +194,86 @@ STATIC bool init_flash_fs(void){
 
     return true;
 }
+#endif
+
+
+#if MICROPY_HW_HAS_SPIFLASH
+
+static fs_user_mount_t s_sspiflash_vfs_fat;
+
+STATIC bool init_spiflash_fs(void){
+    // init the vfs object
+    fs_user_mount_t *vfs_fat = &s_sspiflash_vfs_fat;
+    vfs_fat->flags = 0;
+    pyb_spiflash_init_vfs(vfs_fat);
+
+    // try to mount the flash
+    FRESULT res = f_mount(&vfs_fat->fatfs);
+    if (res == FR_NO_FILESYSTEM) {
+        // no filesystem, or asked to reset it, so create a fresh one
+        uint8_t working_buf[_MAX_SS];
+		vfs_fat->fatfs.part = 0;
+        res = f_mkfs(&vfs_fat->fatfs, FM_FAT, 0, working_buf, sizeof(working_buf));
+        if (res == FR_OK) {
+            // success creating fresh LFS
+        } else {
+            printf("PYB: can't create flash filesystem %d \n", res);
+            return false;
+        }
+        
+        // set label
+        f_setlabel(&vfs_fat->fatfs, MICROPY_HW_FLASH_FS_LABEL);
+
+        // create empty main.py
+        FIL fp;
+        f_open(&vfs_fat->fatfs, &fp, "/main.py", FA_WRITE | FA_CREATE_ALWAYS);
+        UINT n;
+        f_write(&fp, fresh_main_py, sizeof(fresh_main_py) - 1 /* don't count null terminator */, &n);
+        f_close(&fp);
+
+    } else if (res == FR_OK) {
+        // mount sucessful
+    } else {
+    fail:
+        printf("PYB: can't mount flash\n");
+        return false;
+    }
+
+    // mount the flash device (there should be no other devices mounted at this point)
+    // we allocate this structure on the heap because vfs->next is a root pointer
+    mp_vfs_mount_t *vfs = m_new_obj_maybe(mp_vfs_mount_t);
+    if (vfs == NULL) {
+        goto fail;
+    }
+    vfs->str = "/spiflash";
+    vfs->len = 9;
+    vfs->obj = MP_OBJ_FROM_PTR(vfs_fat);
+    vfs->next = NULL;
+    MP_STATE_VM(vfs_mount_table) = vfs;
+
+    // The current directory is used as the boot up directory.
+    // It is set to the internal flash filesystem by default.
+    MP_STATE_PORT(vfs_cur) = vfs;
+
+    // Make sure we have a /flash/boot.py.  Create it if needed.
+    FILINFO fno;
+    res = f_stat(&vfs_fat->fatfs, "/boot.py", &fno);
+    if (res != FR_OK) {
+        // doesn't exist, create fresh file
+        FIL fp;
+        res = f_open(&vfs_fat->fatfs, &fp, "/boot.py", FA_WRITE | FA_CREATE_ALWAYS);
+		if(res != FR_OK)
+			printf("Unable create boot.py file \n");
+        UINT n;
+        res = f_write(&fp, fresh_boot_py, sizeof(fresh_boot_py) - 1 /* don't count null terminator */, &n);
+		if(res != FR_OK)
+			printf("Unable write boot.py file \n");
+        f_close(&fp);
+    }
+
+    return true;
+}
+#endif
 
 
 #if MICROPY_HW_HAS_SDCARD
@@ -270,13 +354,16 @@ STATIC bool init_sdcard_fs(void) {
 #if MICROPY_PY_THREAD
 STATIC StaticTask_t mp_task_tcb;
 STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
+
+STATIC StaticTask_t mp_usbtask_tcb;
+STATIC StackType_t mp_usbtask_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
 #endif
 
 STATIC char mp_task_heap[MP_TASK_HEAP_SIZE]__attribute__((aligned (8)));
 
 static void ExecuteUsbMSC(void){
 	S_USBDEV_STATE *psUSBDev_msc_state = NULL;
-	psUSBDev_msc_state = USBDEV_Init(USBD_VID, USBD_MSC_PID, eUSBDEV_MODE_MSC);
+	psUSBDev_msc_state = USBDEV_Init(USBD_VID, USBD_MSC_PID, eUSBDEV_MODE_MSC_VCP);
 	if(psUSBDev_msc_state == NULL){
 		mp_raise_ValueError("bad USB mode");
 	}
@@ -285,7 +372,8 @@ static void ExecuteUsbMSC(void){
 	if (USBD_IS_ATTACHED())
 	{
 		USBDEV_Start(psUSBDev_msc_state);
-		printf("Start USB device MSC class \n");
+		printf("Start USB device MSC and VCP \n");
+
 		while(1)
 		{
 			MSCTrans_ProcessCmd();
@@ -296,20 +384,29 @@ static void ExecuteUsbMSC(void){
 	}
 }
 
+void mp_usbtask(void *pvParameter) {
+		ExecuteUsbMSC();
+}
+
 void mp_task(void *pvParameter) {
 	mp_uint_t regs[10];
 	volatile uint32_t sp = (uint32_t)gc_helper_get_regs_and_sp(regs);
 	bool mounted_sdcard = false;
+	bool mounted_flash = false;
+	bool mounted_spiflash = false;
 
 	#if MICROPY_PY_THREAD
 	mp_thread_init(&mp_task_stack[0], MP_TASK_STACK_LEN);
 	#endif
 
+	
+#if 0
 	//Detect sw2 button press or not
 	if(mp_hal_pin_read(MICROPY_HW_USRSW_SW2_PIN) == 0){
 		//execute USB mass storage mode and export internal flash
 		ExecuteUsbMSC();
 	}
+#endif
 
 soft_reset:
 	// initialise the stack pointer for the main thread
@@ -326,15 +423,53 @@ soft_reset:
 	extint_init0();
 
    // Initialise the local flash filesystem.
-    // Create it if needed, mount in on /flash, and set it as current dir.
-	bool mounted_flash = init_flash_fs();
+#if MICROPY_HW_HAS_FLASH
 
-#if MICROPY_HW_HAS_SDCARD
+    // Create it if needed, mount in on /flash, and set it as current dir.
+	mounted_flash = init_flash_fs();
+#endif
+
+#if MICROPY_HW_HAS_SPIFLASH
+
+    // Create it if needed, mount in on /flash, and set it as current dir.
+	mounted_spiflash = init_spiflash_fs();
+#endif
+
+
+#if 0 //MICROPY_HW_HAS_SDCARD
 	// if an SD card is present then mount it on /sd/
 	if (sdcard_is_present()) {
 		// if there is a file in the flash called "SKIPSD", then we don't mount the SD card
 		mounted_sdcard = init_sdcard_fs();
 	}
+#endif
+
+#if MICROPY_PY_THREAD
+
+	//Open MSC and VCP
+
+	TaskHandle_t mpUSBTaskHandle;
+
+    mpUSBTaskHandle = xTaskCreateStatic(mp_usbtask, "USB_MSCVCP",
+        MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, mp_usbtask_stack, &mp_usbtask_tcb);
+
+    if (mpUSBTaskHandle == NULL){
+		__fatal_error("FreeRTOS create USB task!");
+	}
+	
+
+	S_USBDEV_STATE *psUSBDevState;
+	while(1){
+		psUSBDevState = USBDEV_UpdateState();
+
+		if(psUSBDevState->bConnected){
+			break;
+		}
+		vTaskDelay(1);
+	}
+
+	vTaskDelay(100);
+	
 #endif
 
 	// set sys.path based on mounted filesystems (/sd is first so it can override /flash)
@@ -343,6 +478,11 @@ soft_reset:
 		mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_sd_slash_lib));
 	}
 	
+	if (mounted_spiflash) {
+        mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_spiflash));
+        mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_spiflash_slash_lib));
+    }
+
 	if (mounted_flash) {
         mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_flash));
         mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_flash_slash_lib));
@@ -409,10 +549,16 @@ int main (void)
 	printf("|          Micropython Code for Nuvoton M48x            |\n");
 	printf("+-------------------------------------------------------+\n");
 
+#if MICROPY_HW_HAS_FLASH
 	flash_init();
+#endif
+
+#if MICROPY_HW_HAS_SPIFLASH
+	spiflash_init();
+#endif
 
 #if MICROPY_HW_HAS_SDCARD
-        sdcard_init();
+	sdcard_init();
 #endif
 
 #if MICROPY_HW_ENABLE_RNG

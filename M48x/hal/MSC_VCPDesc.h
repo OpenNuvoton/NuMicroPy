@@ -1,25 +1,25 @@
 /***************************************************************************//**
- * @file     MSC_Desc.h
- * @brief    M480 series USB class descriptions code for mass storage
+ * @file     MSC_VCPDesc.h
+ * @brief    M480 series USB class descriptions code for mass storage and VCP
  * @version  0.0.1
  *
- * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
+ * @copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
-#ifndef __MSC_DESC_H__
-#define __MSC_DESC_H__
+#ifndef __MSC_VCPDESC_H__
+#define __MSC_VCPDESC_H__
 
 #include "M48x_USBD.h"
 
-void MSCDesc_SetupDescInfo(
+void MSCVCPDesc_SetupDescInfo(
 	S_USBD_INFO_T *psDescInfo
 );
 
-void MSCDesc_SetVID(
+void MSCVCPDesc_SetVID(
 	S_USBD_INFO_T *psDescInfo,
 	uint16_t u16VID
 );
 
-void MSCDesc_SetPID(
+void MSCVCPDesc_SetPID(
 	S_USBD_INFO_T *psDescInfo,
 	uint16_t u16PID
 );

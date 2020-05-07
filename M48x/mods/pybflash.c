@@ -66,9 +66,9 @@ static mp_uint_t flash_write_blocks(const uint8_t *src, uint32_t block_num, uint
 /******************************************************************************/
 // MicroPython bindings
 //
-// Expose the SD card as an object with the block protocol.
+// Expose the internal flash as an object with the block protocol.
 
-// there is a singleton SDCard object
+// there is a singleton internal flash object
 STATIC const mp_obj_base_t pyb_flash_obj = {&pyb_flash_type};
 
 STATIC mp_obj_t pyb_flash_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {

@@ -50,22 +50,34 @@
 #define EP0_HID_VCP_BUF_LEN     EP0_HID_VCP_MAX_PKT_SIZE
 #define EP1_HID_VCP_BUF_BASE    (SETUP_HID_VCP_BUF_BASE + SETUP_HID_VCP_BUF_LEN)
 #define EP1_HID_VCP_BUF_LEN     EP1_HID_VCP_MAX_PKT_SIZE
+#if 0
 #define EP2_VCP_BUF_BASE    (EP1_HID_VCP_BUF_BASE + EP1_HID_VCP_BUF_LEN)
 #define EP2_VCP_BUF_LEN     EP2_VCP_MAX_PKT_SIZE
 #define EP3_VCP_BUF_BASE    (EP2_VCP_BUF_BASE + EP2_VCP_BUF_LEN)
 #define EP3_VCP_BUF_LEN     EP3_VCP_MAX_PKT_SIZE
 #define EP4_VCP_BUF_BASE    (EP3_VCP_BUF_BASE + EP3_VCP_BUF_LEN)
 #define EP4_VCP_BUF_LEN     EP4_VCP_MAX_PKT_SIZE
+#endif
+
+#if 0
 #define EP5_HID_BUF_BASE    (EP4_VCP_BUF_BASE + EP4_VCP_BUF_LEN)
 #define EP5_HID_BUF_LEN     EP5_HID_MAX_PKT_SIZE
 #define EP6_HID_BUF_BASE    (EP5_HID_BUF_BASE + EP5_HID_BUF_LEN)
 #define EP6_HID_BUF_LEN     EP6_HID_MAX_PKT_SIZE
+#else
+#define EP5_HID_BUF_BASE    (EP1_HID_VCP_BUF_BASE + EP1_HID_VCP_BUF_LEN)
+#define EP5_HID_BUF_LEN     EP5_HID_MAX_PKT_SIZE
+#define EP6_HID_BUF_BASE    (EP5_HID_BUF_BASE + EP5_HID_BUF_LEN)
+#define EP6_HID_BUF_LEN     EP6_HID_MAX_PKT_SIZE
+#endif
 
 
 /* Define the EP number */
+#if 0
 #define VCP_BULK_IN_EP_NUM        0x01
 #define VCP_BULK_OUT_EP_NUM       0x02
 #define VCP_INT_IN_EP_NUM         0x03
+#endif
 //#define INT_OUT_EP_NUM	      0x04
 #define HID_INT_IN_EP_NUM       0x05
 #define HID_INT_OUT_EP_NUM      0x06
@@ -77,6 +89,7 @@
 #define USBD_MAX_POWER                  50  /* The unit is in 2mA. ex: 50 * 2mA = 100mA */
 
 /************************************************/
+#if 0
 /* for VCP class */
 /* Line coding structure
   0-3 dwDTERate    Data terminal rate (baudrate), in bits per second
@@ -91,6 +104,7 @@ typedef struct
     uint8_t   u8ParityType;   /* parity       */
     uint8_t   u8DataBits;     /* data bits    */
 } STR_VCOM_LINE_CODING;
+#endif
 
 void HIDVCPTrans_ClassRequest(void);
 void HIDVCPTrans_Init(void);

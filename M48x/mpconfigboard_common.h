@@ -32,7 +32,6 @@
 // Feature settings with defaults
 
 
-
 // Whether to enable the RTC, exposed as pyb.RTC
 #ifndef MICROPY_HW_ENABLE_RTC
 #define MICROPY_HW_ENABLE_RTC (0)
@@ -58,9 +57,20 @@
 #define MICROPY_HW_ENABLE_SERVO (0)
 #endif
 
+#if defined (ENABLE_SPIM)
+
 // Whether to expose internal flash storage as pyb.Flash
 #ifndef MICROPY_HW_HAS_FLASH
-#define MICROPY_HW_HAS_FLASH (0)
+#define MICROPY_HW_HAS_FLASH (1)
+#endif
+
+#else
+
+// Whether to expose external flash storage as pyb.Flash
+#ifndef MICROPY_HW_HAS_SPIFLASH
+#define MICROPY_HW_HAS_SPIFLASH (1)
+#endif
+
 #endif
 
 // Whether to enable the SD card interface, exposed as pyb.SDCard
@@ -68,11 +78,6 @@
 #define MICROPY_HW_HAS_SDCARD (1)
 #endif
 
-
-// Whether to enable the LCD32MK driver, exposed as pyb.LCD
-#ifndef MICROPY_HW_HAS_LCD
-#define MICROPY_HW_HAS_LCD (0)
-#endif
 
 // The volume label used when creating the flash filesystem
 #ifndef MICROPY_HW_FLASH_FS_LABEL

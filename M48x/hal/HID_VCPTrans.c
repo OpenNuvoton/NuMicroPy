@@ -14,11 +14,8 @@
 
 //EP5 for HID interrupt in and address 0x5
 //EP6 for HID interrupt out and address 0x6
-//EP2 for VCP bulk in and address  0x1
-//EP3 for VCP bulk out and address 0x2
-//EP4 for VCP interrupt in and address 0x3
 
-
+#if 0
 /*--------------------------------------------------------------------------*/
 //VCP releated parameter
 
@@ -27,6 +24,7 @@ STR_VCOM_LINE_CODING s_sLineCoding = {115200, 0, 0, 8};   /* Baud rate : 115200 
 /* parity       */
 /* data bits    */
 uint16_t s_u16CtrlSignal = 0;     /* BIT0: DTR(Data Terminal Ready) , BIT1: RTS(Request To Send) */
+#endif
 
 
 
@@ -41,6 +39,7 @@ void HIDVCPTrans_ClassRequest(void)
         // Device to host
         switch (buf[1])
         {
+#if 0
         case VCP_GET_LINE_CODE:
         {
             if (buf[4] == 0)   /* VCOM-1 */
@@ -54,6 +53,7 @@ void HIDVCPTrans_ClassRequest(void)
             USBD_PrepareCtrlOut(0,0);
             break;
         }
+#endif
         case HID_GET_REPORT:
         case HID_GET_IDLE:
         case HID_GET_PROTOCOL:
@@ -70,6 +70,7 @@ void HIDVCPTrans_ClassRequest(void)
         // Host to device
         switch (buf[1])
         {
+#if 0
         case VCP_SET_CONTROL_LINE_STATE:
         {
             if (buf[4] == 0)   /* VCOM-1 */
@@ -96,6 +97,7 @@ void HIDVCPTrans_ClassRequest(void)
 
             break;
         }
+#endif
         case HID_SET_REPORT:
         {
             if (buf[3] == 3)
@@ -149,6 +151,7 @@ void HIDVCPTrans_Init(void)
     /* Buffer range for EP1 */
     USBD_SET_EP_BUF_ADDR(EP1, EP1_HID_VCP_BUF_BASE);
 
+#if 0
     /*****************************************************/
     /* EP2 ==> Bulk IN endpoint, address 1 */
     USBD_CONFIG_EP(EP2, USBD_CFG_EPMODE_IN | VCP_BULK_IN_EP_NUM);
@@ -166,6 +169,7 @@ void HIDVCPTrans_Init(void)
     USBD_CONFIG_EP(EP4, USBD_CFG_EPMODE_IN | VCP_INT_IN_EP_NUM);
     /* Buffer offset for EP4 ->  */
     USBD_SET_EP_BUF_ADDR(EP4, EP4_VCP_BUF_BASE);
+#endif
 
     /*****************************************************/
     /* EP5 ==> Interrupt IN endpoint, address 4 */

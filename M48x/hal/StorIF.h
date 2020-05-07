@@ -10,6 +10,8 @@
 
 #include <inttypes.h>
 
+#define STORIF_SECTOR_SIZE 512
+
 typedef enum{
 	eSTORIF_ERRNO_NONE = 0,
 	eSTORIF_ERRNO_NULL_PTR = -1,
@@ -18,6 +20,7 @@ typedef enum{
 	eSTORIF_ERRNO_SIZE = -4,
 	eSTORIF_ERRNO_NOT_READY = -5,
 	eSTORIF_ERRNO_STOR_OPEN = -6,
+	eSTORIF_ERRNO_DEVICE = -7,
 }E_STORIF_ERRNO;
 
 
@@ -72,5 +75,7 @@ typedef struct{
 }S_STORIF_IF;
 
 extern const S_STORIF_IF g_STORIF_sFlash;
+extern const S_STORIF_IF g_STORIF_sSPIFlash;
+extern const S_STORIF_IF g_STORIF_sSDCard;
 
 #endif

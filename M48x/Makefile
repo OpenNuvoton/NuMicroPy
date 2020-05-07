@@ -150,6 +150,7 @@ SRC_MODS_C = $(addprefix mods/,\
 	pybcan.c \
 	pybusb.c \
 	pybflash.c \
+	pybspiflash.c \
 	pybswitch.c \
 	pybled.c \
 	moduos.c \
@@ -191,6 +192,7 @@ SRC_BSP_DRIVER_C = $(addprefix $(M48XBSP_LIB)/StdDriver/src/,\
 	wdt.c \
 	spim.c \
 	ebi.c \
+	qspi.c \
 	)
 
 ifeq ($(MICROPY_PY_THREAD),1)
@@ -367,7 +369,7 @@ endif
 
 SRC_HAL_C = $(addprefix hal/,\
 	mphalport.c \
-	SDCard.c \
+	StorIF_SDCard.c \
 	m48x_ISR.c \
 	pin_defs_m48x.c \
 	pin_int.c \
@@ -381,11 +383,16 @@ SRC_HAL_C = $(addprefix hal/,\
 	M48x_USBD.c \
 	HID_VCPTrans.c \
 	HID_VCPDesc.c \
-	MSC_Desc.c \
-	MSC_Trans.c \
+	MSC_VCPTrans.c \
+	MSC_VCPDesc.c \
 	StorIF_Flash.c \
 	M48x_UART.c \
+	StorIF_SPIFlash.c \
 	)
+
+#	MSC_Desc.c
+#	MSC_Trans.c
+
 
 ifeq ($(MICROPY_LVGL),1)
 SRC_LVGL_C = $(LVGL_MPY)

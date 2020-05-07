@@ -156,6 +156,73 @@ static int call_dupterm_read(size_t idx) {
 }
 #endif
 
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+//	REPL read write to USB
+///////////////////////////////////////////////////////////////////////////////////////
+#define REPL_TO_USB
+
+#if defined(REPL_TO_USB)
+
+#include "M48x_USBD.h"
+
+static void SendStr_ToUSB(char *ptr, int len)
+{
+	S_USBDEV_STATE *psUSBState;
+	
+	psUSBState = USBDEV_UpdateState();
+	
+	if(psUSBState->eUSBMode != eUSBDEV_MODE_MSC_VCP)
+		return;
+	
+	if(!USBDEV_VCPCanSend(psUSBState))
+		return;
+		
+	USBDEV_VCPSendData((uint8_t *)ptr, len, 10, psUSBState);
+
+//	if(ptr[len] == '\n')
+//	{
+//		char chTemp;
+//		chTemp = '\r';
+//		USBDEV_VCPSendData((uint8_t *)&chTemp, 1, 10, psUSBState);		
+//	}
+}
+
+static char RecvChar_FromUSB(void)
+{
+	S_USBDEV_STATE *psUSBState;
+	
+	psUSBState = USBDEV_UpdateState();
+	
+	if(psUSBState->eUSBMode != eUSBDEV_MODE_MSC_VCP)
+		return 0;
+	
+	while(1){
+		if(USBDEV_VCPCanRecv(psUSBState)){
+			char chTemp;
+			USBDEV_VCPRecvData((uint8_t *)&chTemp,1 ,10, psUSBState);
+			return chTemp;
+		}
+	}
+}
+
+
+int REPL_write (int fd, char *ptr, int len)
+{
+	SendStr_ToUSB(ptr, len);
+    return len;
+}
+
+int REPL_read(int fd, char *ptr, int len)
+{
+	*ptr = RecvChar_FromUSB();
+    return 1;
+}
+
+#endif
+
 int mp_hal_stdin_rx_chr(void) {
     unsigned char c;
 #if MICROPY_PY_OS_DUPTERM
@@ -175,7 +242,11 @@ int mp_hal_stdin_rx_chr(void) {
     } else {
         main_term:;
 #endif
+#if defined (REPL_TO_USB)
+        int ret = REPL_read(0, (char *)&c, 1);
+#else
         int ret = read(0, &c, 1);
+#endif
         if (ret == 0) {
             c = 4; // EOF, ctrl-D
         } else if (c == '\n') {
@@ -188,7 +259,14 @@ int mp_hal_stdin_rx_chr(void) {
 }
 
 void mp_hal_stdout_tx_strn(const char *str, size_t len) {
+
+#if defined (REPL_TO_USB)
+    int ret = REPL_write(1, (char *)str, len);
+	vTaskDelay(1);
+#else
     int ret = write(1, str, len);
+#endif
+
     mp_uos_dupterm_tx_strn(str, len);
     (void)ret; // to suppress compiler warning
 }

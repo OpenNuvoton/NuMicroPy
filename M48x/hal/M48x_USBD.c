@@ -15,11 +15,18 @@
 #include "NuMicro.h"
 #include "HID_VCPDesc.h"
 #include "HID_VCPTrans.h"
-#include "MSC_Desc.h"
-#include "MSC_Trans.h"
+#include "MSC_VCPDesc.h"
+#include "MSC_VCPTrans.h"
 
 static S_USBDEV_STATE s_sUSBDev_state; 
 S_USBD_INFO_T g_sUSBDev_DescInfo;
+
+uint32_t volatile g_u32MSCOutToggle = 0, g_u32MSCOutSkip = 0;
+uint32_t volatile g_u32VCPOutToggle = 0;
+
+uint8_t volatile g_u8MSCRemove = 0;
+uint32_t volatile g_u32VCPConnect = 0;
+uint32_t volatile g_u32MSCConnect = 0;
 
 
 static void EnableHSUSBDevPhyClock(void){
@@ -63,15 +70,15 @@ S_USBDEV_STATE *USBDEV_Init(
 
 	EnableHSUSBDevPhyClock();
 
-	if(eUSBMode == eUSBDEV_MODE_MSC){
-		MSCDesc_SetupDescInfo(&g_sUSBDev_DescInfo);
-		MSCDesc_SetVID(&g_sUSBDev_DescInfo, u16VID);
-		MSCDesc_SetPID(&g_sUSBDev_DescInfo, u16PID);
+	if(eUSBMode == eUSBDEV_MODE_MSC_VCP){
+		MSCVCPDesc_SetupDescInfo(&g_sUSBDev_DescInfo);
+		MSCVCPDesc_SetVID(&g_sUSBDev_DescInfo, u16VID);
+		MSCVCPDesc_SetPID(&g_sUSBDev_DescInfo, u16PID);
 
-		USBD_Open(&g_sUSBDev_DescInfo, MSCTrans_ClassRequest, NULL);
+		USBD_Open(&g_sUSBDev_DescInfo, MSCVCPTrans_ClassRequest, NULL);
 		USBD_SetConfigCallback(MSCTrans_SetConfig);
 		
-		MSCTrans_Init(&g_sUSBDev_DescInfo);
+		MSCVCPTrans_Init(&g_sUSBDev_DescInfo);
 
 	}
 	else{
@@ -93,6 +100,17 @@ S_USBDEV_STATE *USBDEV_Init(
 	return &s_sUSBDev_state;
 }
 
+S_USBDEV_STATE *USBDEV_UpdateState(void)
+{
+	s_sUSBDev_state.bConnected = 0;
+	if(s_sUSBDev_state.eUSBMode == eUSBDEV_MODE_MSC_VCP){
+		if((g_u32MSCConnect) && (g_u32VCPConnect))
+			s_sUSBDev_state.bConnected = 1;
+	}
+
+	return &s_sUSBDev_state;
+}
+
 int32_t USBDEV_Start(
 	S_USBDEV_STATE *psUSBDevState
 )
@@ -109,9 +127,6 @@ int32_t USBDEV_Start(
 	return 0;
 }
 
-
-#if MICROPY_HW_ENABLE_USBD
-
 E_USBDEV_MODE USBDEV_GetMode(
 	S_USBDEV_STATE *psUSBDevState
 )
@@ -121,6 +136,84 @@ E_USBDEV_MODE USBDEV_GetMode(
 	return psUSBDevState->eUSBMode;
 }
 
+int32_t USBDEV_VCPCanSend(
+	S_USBDEV_STATE *psUSBDevState
+)
+{
+	if(!USBD_IS_ATTACHED())
+		return 0;
+
+	return VCPTrans_BulkInCanSend();
+}
+
+int32_t USBDEV_VCPSendData(
+	uint8_t *pu8DataBuf,
+	uint32_t u32DataBufLen,
+	uint32_t u32Timeout,
+	S_USBDEV_STATE *psUSBDevState
+)
+{
+	int i32SendedLen = 0;
+	if(pu8DataBuf == NULL)
+		return i32SendedLen;
+			
+	i32SendedLen = VCPTrans_StartBulkIn(pu8DataBuf, u32DataBufLen);
+	
+	uint32_t u32SendTime = mp_hal_ticks_ms();
+	
+	while((mp_hal_ticks_ms() - u32SendTime) < u32Timeout){
+		if(i32SendedLen != VCPTrans_BulkInSendedLen()){
+			u32SendTime = mp_hal_ticks_ms();
+			i32SendedLen = VCPTrans_BulkInSendedLen();
+		}
+		
+		if(i32SendedLen ==  u32DataBufLen)
+			break;
+	}
+
+	VCPTrans_StopBulkIn();
+
+	return i32SendedLen;
+}
+
+int32_t USBDEV_VCPCanRecv(
+	S_USBDEV_STATE *psUSBDevState
+)
+{
+	return VCPTrans_BulkOutCanRecv();
+}
+
+int32_t USBDEV_VCPRecvData(
+	uint8_t *pu8DataBuf,
+	uint32_t u32DataBufLen,
+	uint32_t u32Timeout,
+	S_USBDEV_STATE *psUSBDevState
+)
+{
+	int i32CopyLen = 0;
+	int i32RecvLen = 0;
+
+	if(pu8DataBuf == NULL)
+		return i32RecvLen;
+
+	uint32_t u32RecvTime = mp_hal_ticks_ms();
+	
+	while((mp_hal_ticks_ms() - u32RecvTime) < u32Timeout){
+		
+		i32CopyLen = VCPTrans_BulkOutRecv(pu8DataBuf + i32RecvLen, u32DataBufLen - i32RecvLen);
+		if(i32CopyLen){
+			i32RecvLen += i32CopyLen;
+			if(i32RecvLen >= u32DataBufLen)
+				break;
+			u32RecvTime = mp_hal_ticks_ms();
+		}
+	}
+
+	return i32RecvLen;
+}
+
+#if MICROPY_HW_ENABLE_USBD
+
 int32_t USBDEV_HIDCanSend(
 	S_USBDEV_STATE *psUSBDevState
 )
@@ -128,12 +221,6 @@ int32_t USBDEV_HIDCanSend(
 	return HIDVCPTrans_HIDSetInReportCanSend();
 }
 
-int32_t USBDEV_VCPCanSend(
-	S_USBDEV_STATE *psUSBDevState
-)
-{
-	return HIDVCPTrans_VCPBulkInCanSend();
-}
 
 int32_t USBDEV_HIDSendData(
 	uint8_t *pu8DataBuf,
@@ -165,35 +252,6 @@ int32_t USBDEV_HIDSendData(
 	return i32SendedLen;
 }
 
-int32_t USBDEV_VCPSendData(
-	uint8_t *pu8DataBuf,
-	uint32_t u32DataBufLen,
-	uint32_t u32Timeout,
-	S_USBDEV_STATE *psUSBDevState
-)
-{
-	int i32SendedLen = 0;
-	if(pu8DataBuf == NULL)
-		return i32SendedLen;
-			
-	i32SendedLen = HIDVCPTrans_StartVCPBulkIn(pu8DataBuf, u32DataBufLen);
-	
-	uint32_t u32SendTime = mp_hal_ticks_ms();
-	
-	while((mp_hal_ticks_ms() - u32SendTime) < u32Timeout){
-		if(i32SendedLen != HIDVCPTrans_VCPBulkInSendedLen()){
-			u32SendTime = mp_hal_ticks_ms();
-			i32SendedLen = HIDVCPTrans_VCPBulkInSendedLen();
-		}
-		
-		if(i32SendedLen ==  u32DataBufLen)
-			break;
-	}
-
-	HIDVCPTrans_StopVCPBulkIn();
-
-	return i32SendedLen;
-}
 
 
 int32_t USBDEV_HIDCanRecv(
@@ -203,12 +261,6 @@ int32_t USBDEV_HIDCanRecv(
 	return HIDVCPTrans_HIDGetOutReportCanRecv();
 }
 
-int32_t USBDEV_VCPCanRecv(
-	S_USBDEV_STATE *psUSBDevState
-)
-{
-	return HIDVCPTrans_VCPBulkOutCanRecv();
-}
 
 
 int32_t USBDEV_HIDRecvData(
@@ -240,35 +292,6 @@ int32_t USBDEV_HIDRecvData(
 	return i32RecvLen;
 }
 
-int32_t USBDEV_VCPRecvData(
-	uint8_t *pu8DataBuf,
-	uint32_t u32DataBufLen,
-	uint32_t u32Timeout,
-	S_USBDEV_STATE *psUSBDevState
-)
-{
-	int i32CopyLen = 0;
-	int i32RecvLen = 0;
-
-	if(pu8DataBuf == NULL)
-		return i32RecvLen;
-
-	uint32_t u32RecvTime = mp_hal_ticks_ms();
-	
-	while((mp_hal_ticks_ms() - u32RecvTime) < u32Timeout){
-		
-		i32CopyLen = HIDVCPTrans_VCPBulkOutRecv(pu8DataBuf + i32RecvLen, u32DataBufLen - i32RecvLen);
-		if(i32CopyLen){
-			i32RecvLen += i32CopyLen;
-			if(i32RecvLen >= u32DataBufLen)
-				break;
-			u32RecvTime = mp_hal_ticks_ms();
-		}
-	}
-
-	return i32RecvLen;
-}
-
 
 int32_t USBDEV_HIDInReportPacketSize(){
 	return EP5_HID_MAX_PKT_SIZE;
@@ -281,17 +304,27 @@ int32_t USBDEV_HIDOutReportPacketSize(){
 
 static void EP5_Handler(void)
 {
-	//HID interrupt IN handler
-	HIDVCPTrans_HIDInterruptInHandler();
+	if(s_sUSBDev_state.eUSBMode == eUSBDEV_MODE_MSC_VCP){
+		MSCTrans_BulkInHandler();
+	}
+	else {
+		//HID interrupt IN handler
+		HIDVCPTrans_HIDInterruptInHandler();
+	}
 }
 
 static void EP6_Handler(void)
 {
-	//HID interrupt OUT handler
-    uint8_t *pu8EPAddr;
-    /* Interrupt OUT */
-    pu8EPAddr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP6));
-    HIDVCPTrans_HIDInterruptOutHandler(pu8EPAddr, USBD_GET_PAYLOAD_LEN(EP6));
+	if(s_sUSBDev_state.eUSBMode == eUSBDEV_MODE_MSC_VCP){
+		MSCTrans_BulkOutHandler();
+	}
+	else{
+		//HID interrupt OUT handler
+		uint8_t *pu8EPAddr;
+		/* Interrupt OUT */
+		pu8EPAddr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP6));
+		HIDVCPTrans_HIDInterruptOutHandler(pu8EPAddr, USBD_GET_PAYLOAD_LEN(EP6));
+	}
 }
 
 
@@ -299,11 +332,12 @@ static void EP6_Handler(void)
 
 static void EP5_Handler(void)
 {
-
+	MSCTrans_BulkInHandler();
 }
 
 static void EP6_Handler(void)
 {
+	MSCTrans_BulkOutHandler();
 
 }
 
@@ -312,12 +346,14 @@ static void EP6_Handler(void)
 static void EP2_Handler(void)
 {
 	//VCP/MSC Bulk IN handler
-	if(s_sUSBDev_state.eUSBMode == eUSBDEV_MODE_MSC){
-		MSCTrans_BulkInHandler();
+	if(s_sUSBDev_state.eUSBMode == eUSBDEV_MODE_MSC_VCP){
+		VCPTrans_BulkInHandler();
 	}
-	else if(s_sUSBDev_state.eUSBMode & eUSBDEV_MODE_VCP){
+	else if(s_sUSBDev_state.eUSBMode & eUSBDEV_MODE_HID){
 #if MICROPY_HW_ENABLE_USBD
+#if 0
 		HIDVCPTrans_VCPBulkInHandler();
+#endif
 #endif
 	}
 
@@ -325,19 +361,34 @@ static void EP2_Handler(void)
 
 static void EP3_Handler(void)
 {
-	//VCP/MSC Bulk OUT handler
+	//VCP bulk OUT handler
 
-	if(s_sUSBDev_state.eUSBMode == eUSBDEV_MODE_MSC){
-		MSCTrans_BulkOutHandler();
+	if(s_sUSBDev_state.eUSBMode == eUSBDEV_MODE_MSC_VCP){
+		/* Bulk OUT */
+		if (g_u32VCPOutToggle == (USBD->EPSTS0 & 0xf000)){
+			USBD_SET_PAYLOAD_LEN(EP3, EP3_VCP_MAX_PKT_SIZE);
+		}
+		else{
+
+			//VCP bulk OUT handler
+			uint8_t *pu8EPAddr;
+			/* bulk OUT */
+			pu8EPAddr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP3));
+
+			VCPTrans_BulkOutHandler(pu8EPAddr, USBD_GET_PAYLOAD_LEN(EP3));
+			g_u32VCPOutToggle = USBD->EPSTS0 & 0xf000;
+		}
 	}
-	else if(s_sUSBDev_state.eUSBMode & eUSBDEV_MODE_VCP){
+	else if(s_sUSBDev_state.eUSBMode & eUSBDEV_MODE_HID){
 #if MICROPY_HW_ENABLE_USBD
+#if 0
 		//VCP bulk OUT handler
 		uint8_t *pu8EPAddr;
 		/* bulk OUT */
 		pu8EPAddr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP3));
 
 		HIDVCPTrans_VCPBulkOutHandler(pu8EPAddr, USBD_GET_PAYLOAD_LEN(EP3));
+#endif
 #endif
 	}
 }
@@ -378,6 +429,10 @@ void Handle_USBDEV_Irq(
             /* Bus reset */
             USBD_ENABLE_USB();
             USBD_SwReset();
+            g_u8MSCRemove = 0;
+			g_u32VCPOutToggle = g_u32MSCOutToggle = g_u32MSCOutSkip = 0;
+			g_u32VCPConnect = 0;
+			g_u32MSCConnect = 0;
         }
         if (u32BusState & USBD_STATE_SUSPEND)
         {

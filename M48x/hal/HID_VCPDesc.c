@@ -161,6 +161,7 @@ uint8_t s_au8HID_ConfigDescriptor[] =
     HID_DEFAULT_INT_IN_INTERVAL         /* bInterval */
 };
 
+#if 0
 /*!<USB Configure Descriptor */
 uint8_t s_au8HIDVCP_ConfigDescriptor[] =
 {
@@ -387,7 +388,7 @@ uint8_t s_au8VCP_ConfigDescriptor[] =
     0x00,                           /* bInterval        */
 };
 
-
+#endif
 
 /*!<USB Language String Descriptor */
 uint8_t s_au8HIDVCP_StringLang[4] =
@@ -508,12 +509,14 @@ uint32_t s_au32HIDVCP_UsbHidReportLen[3] =
     sizeof(s_au8HIDVCP_DeviceReportDescriptor),
 };
 
+#if 0
 uint32_t s_au32HIDVCP_ConfigHidDescIdx[3] =
 {
     0,
     0,
     (sizeof(s_au8HIDVCP_ConfigDescriptor) - LEN_HID - (2*LEN_ENDPOINT)),
 };
+#endif
 
 uint8_t *s_apu8VCP_UsbHidReport[3] =
 {
@@ -553,6 +556,8 @@ void HIDVCPDesc_SetupDescInfo(
 		psDescInfo->gu32ConfigHidDescIdx = s_au32HID_ConfigHidDescIdx;
 
 	}
+
+#if 0
 	else if(eUSBMode == eUSBDEV_MODE_HID_VCP){
 		psDescInfo->gu8DevDesc = s_au8HIDVCP_DeviceDescriptor;
 		psDescInfo->gu8ConfigDesc = s_au8HIDVCP_ConfigDescriptor;
@@ -573,6 +578,7 @@ void HIDVCPDesc_SetupDescInfo(
 		psDescInfo->gu32ConfigHidDescIdx = s_au32VCP_ConfigHidDescIdx;
 
 	}
+#endif
 }
 
 

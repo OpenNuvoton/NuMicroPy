@@ -94,12 +94,16 @@ STATIC mp_obj_t pyb_usb_mode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *
     if (n_args == 0) {
         E_USBDEV_MODE mode = USBDEV_GetMode(usb_device.psUSBDev_vdp_hid_state);
         switch (mode) {
+#if 0
             case eUSBDEV_MODE_VCP:
                 return MP_OBJ_NEW_QSTR(MP_QSTR_VCP);
+#endif
             case eUSBDEV_MODE_HID:
                 return MP_OBJ_NEW_QSTR(MP_QSTR_HID);
+#if 0
             case eUSBDEV_MODE_HID_VCP:
                 return MP_OBJ_NEW_QSTR(MP_QSTR_VCP_plus_HID);
+#endif
             default:
                 return mp_const_none;
         }
@@ -134,6 +138,7 @@ STATIC mp_obj_t pyb_usb_mode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *
     uint16_t pid = args[2].u_int;
     E_USBDEV_MODE mode;
 
+#if 0
 	if (strcmp(mode_str, "CDC+HID") == 0 || strcmp(mode_str, "VCP+HID") == 0) {
         if (args[2].u_int == -1) {
             pid = MP_USBD_PID_VCP_HID;
@@ -145,6 +150,9 @@ STATIC mp_obj_t pyb_usb_mode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *
         }
 		mode = eUSBDEV_MODE_VCP;
     } else if (strcmp(mode_str, "HID") == 0) {
+#else
+    if (strcmp(mode_str, "HID") == 0) {
+#endif
         if (args[2].u_int == -1) {
             pid = MP_USBD_PID_HID;
         }

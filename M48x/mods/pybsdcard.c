@@ -34,28 +34,30 @@
 
 #include "mpconfigboard_common.h"
 
-#include "hal/SDCard.h"
 #include "pybsdcard.h"
+#include "hal/StorIF.h"
 
 #if MICROPY_HW_HAS_SDCARD
 
+static void *s_pvStorSDCardRes;
+
 void sdcard_init(void)
 {
-    SDCard_Init();
+ 	g_STORIF_sSDCard.pfnStorInit(0, &s_pvStorSDCardRes);
 }
 
 bool sdcard_is_present(void)
 {
-    return SDCard_CardDetection();
+    return g_STORIF_sSDCard.pfnDetect(s_pvStorSDCardRes);
 }
 
 mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blocks) {
     // check that SD card is initialised
-    if (SDCard_CardDetection() == false) {
+    if (g_STORIF_sSDCard.pfnDetect(s_pvStorSDCardRes) == false) {
         return MP_EIO;
     }
 
-    if(SDCard_Read(dest, block_num, num_blocks) < 0){
+    if(g_STORIF_sSDCard.pfnReadSector(dest, block_num, num_blocks, s_pvStorSDCardRes) < 0){
         return MP_EIO;
     }
 
@@ -65,11 +67,11 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
 
 mp_uint_t sdcard_write_blocks(const uint8_t *src, uint32_t block_num, uint32_t num_blocks) {
     // check that SD card is initialised
-    if (SDCard_CardDetection() == false) {
+    if (g_STORIF_sSDCard.pfnDetect(s_pvStorSDCardRes) == false) {
         return MP_EIO;
     }
 
-    if(SDCard_Write(src, block_num, num_blocks) < 0){
+    if(g_STORIF_sSDCard.pfnWriteSector((uint8_t *)src, block_num, num_blocks, s_pvStorSDCardRes) < 0){
         return MP_EIO;
     }
 
@@ -93,21 +95,21 @@ STATIC mp_obj_t pyb_sdcard_make_new(const mp_obj_type_t *type, size_t n_args, si
 }
 
 STATIC mp_obj_t sd_present(mp_obj_t self) {
-    return mp_obj_new_bool(SDCard_CardDetection());
+    return mp_obj_new_bool(g_STORIF_sSDCard.pfnDetect(s_pvStorSDCardRes) );
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(sd_present_obj, sd_present);
 
 STATIC mp_obj_t sd_info(mp_obj_t self) {
-    if (SDCard_CardDetection() == false) {
+    if (g_STORIF_sSDCard.pfnDetect(s_pvStorSDCardRes)  == false) {
         return mp_const_none;
     }
-    S_SDCARD_INFO cardinfo;
-    SDCard_GetCardInfo(&cardinfo);
+    S_STORIF_INFO cardinfo;
+    g_STORIF_sSDCard.pfnGetInfo(&cardinfo, s_pvStorSDCardRes);
 
     mp_obj_t tuple[3] = {
-        mp_obj_new_int_from_ull((uint64_t)cardinfo.diskSize * 1024),
-        mp_obj_new_int_from_uint(cardinfo.sectorSize),
-        mp_obj_new_int(cardinfo.CardType),
+        mp_obj_new_int_from_ull((uint64_t)cardinfo.u32DiskSize * 1024),
+        mp_obj_new_int_from_uint(cardinfo.u32SectorSize),
+        mp_obj_new_int(cardinfo.u32SubType),
     };
     return mp_obj_new_tuple(3, tuple);
 }
@@ -116,7 +118,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(sd_info_obj, sd_info);
 STATIC mp_obj_t pyb_sdcard_readblocks(mp_obj_t self, mp_obj_t block_num, mp_obj_t buf) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf, &bufinfo, MP_BUFFER_WRITE);
-    mp_uint_t ret = SDCard_Read(bufinfo.buf, mp_obj_get_int(block_num), bufinfo.len / SDCARD_BLOCK_SIZE);
+    mp_uint_t ret = g_STORIF_sSDCard.pfnReadSector(bufinfo.buf, mp_obj_get_int(block_num), bufinfo.len / SDCARD_BLOCK_SIZE, s_pvStorSDCardRes);
     return mp_obj_new_bool(ret == 0);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(pyb_sdcard_readblocks_obj, pyb_sdcard_readblocks);
@@ -124,7 +126,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(pyb_sdcard_readblocks_obj, pyb_sdcard_readblock
 STATIC mp_obj_t pyb_sdcard_writeblocks(mp_obj_t self, mp_obj_t block_num, mp_obj_t buf) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf, &bufinfo, MP_BUFFER_READ);
-    mp_uint_t ret = SDCard_Write(bufinfo.buf, mp_obj_get_int(block_num), bufinfo.len / SDCARD_BLOCK_SIZE);
+    mp_uint_t ret = g_STORIF_sSDCard.pfnWriteSector(bufinfo.buf, mp_obj_get_int(block_num), bufinfo.len / SDCARD_BLOCK_SIZE, s_pvStorSDCardRes);
     return mp_obj_new_bool(ret == 0);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(pyb_sdcard_writeblocks_obj, pyb_sdcard_writeblocks);
@@ -151,10 +153,10 @@ STATIC mp_obj_t pyb_sdcard_ioctl(mp_obj_t self, mp_obj_t cmd_in, mp_obj_t arg_in
 
         case BP_IOCTL_SEC_COUNT:
         {
-            S_SDCARD_INFO cardinfo;
-            SDCard_GetCardInfo(&cardinfo);
+			S_STORIF_INFO cardinfo;
+			g_STORIF_sSDCard.pfnGetInfo(&cardinfo, s_pvStorSDCardRes);
 
-            return MP_OBJ_NEW_SMALL_INT(cardinfo.totalSectorN);
+            return MP_OBJ_NEW_SMALL_INT(cardinfo.u32TotalSector);
         }
         case BP_IOCTL_SEC_SIZE:
             return MP_OBJ_NEW_SMALL_INT(SDCARD_BLOCK_SIZE);

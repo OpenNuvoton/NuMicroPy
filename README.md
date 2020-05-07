@@ -16,7 +16,7 @@ NuMicroPy is Nuvoton microcontroller porting for MicroPython. MicroPython is a l
 ## Supported target
 Board            |MCU      |Required ROM size     |Required RAM size
 :----------------|---------|----------------------|------------------
-NuMaker-PFM-M487 |M487     |364KB/648KB(W/lvgl)   |75KB/123KB(W/lvgl)
+NuMaker-PFM-M487 |M487     |357KB/648KB(W/lvgl)   |86KB/123KB(W/lvgl)
 NuMaker-IOT-M487 |M487     |322KB                 |46KB
 NuMaker-M263KI   |M263     |266KB                 |35KB
 
@@ -28,20 +28,20 @@ LittlevGL required RAM size 123KB = 91KB + 32KB(SPIM cache)
 2. Hardware setup steps  
 a. Turn on ICE function switch pin 1,2,3 and 4  
 ![NuMaker-PFM-M487](https://i.imgur.com/tFvodDh.jpg)  
-b. Connect USB ICE and USB1.1 to PC  
-c. Setup your terminal program  
-![TeraTerm_setup1](https://imgur.com/oKbxDJ2.jpg)  
-![TeraTerm_setup2](https://imgur.com/tuYp3xh.jpg) 
+b. Connect USB ICE to PC  
 3. Burn firmware  
 Nu-Link-Me exported a "NuMicro MCU" disk, just Copy and Paste prebuilt firmware.bin into "NuMicro MCU" disk.  
 ![CopyPasteFirmware](https://imgur.com/RcxvyHH.jpg)
 4. Python code update steps  
 a. Connected USB1.1 to PC  
-b. [NuMaker-PFM-M487 and NuMaker-IOT-M487]: Press the SW2 and RESET button together. [NuMaker-M263KI]: Press the RESET button. Firmware will export a PYBFLASH disk.
+b. Setup your terminal program  
+![TeraTerm_setup1](https://imgur.com/oKbxDJ2.jpg)  
+![TeraTerm_setup2](https://imgur.com/tuYp3xh.jpg)  
+c. Press the RESET button. Firmware will export a PYBFLASH disk.
 ![PYBFLASH disk](https://imgur.com/Q7mp628.jpg)  
-c. Update your python code to boot.py or main.py
+d. Update your python code to boot.py or main.py
 ![Main Code](https://imgur.com/WGUv4MM.jpg)  
-d. Press the RESET button.  
+e. Press the RESET button.  
 ![Execute Result](https://imgur.com/BVns53g.jpg)  
 
 

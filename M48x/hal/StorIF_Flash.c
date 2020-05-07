@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * @file     StorIF_FMC.c
+ * @file     StorIF_Flash.c
  * @brief    FMC(internal flash) storage access function
  * @version  0.0.1
  *
@@ -9,6 +9,17 @@
 #include <string.h>
 #include "NuMicro.h"
 #include "StorIF.h"
+
+#if MICROPY_PY_THREAD
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+
+static xSemaphoreHandle s_tStorIfMutex;
+
+
+#endif
+
 
 #define DATA_FLASH_STORAGE_OFFSET       0x00060000  /* To avoid the code to write APROM */
 #define DATA_FLASH_SECTOR_SIZE			512  		/* DATA FLASH sector size */
@@ -37,9 +48,25 @@ StorIF_Flash_Init(
     /* Enable FMC ISP function */
     FMC_Open();
 
+#if MICROPY_PY_THREAD
+	s_tStorIfMutex = xSemaphoreCreateMutex();
+
+	if(s_tStorIfMutex == NULL){
+		printf("Unable create flash mutex\n");
+		return eSTORIF_ERRNO_NULL_PTR;
+	}
+	
+	xSemaphoreTake(s_tStorIfMutex, portMAX_DELAY);
+#endif
+
     /* Check if Data Flash Size is 64K. If not, to re-define Data Flash size and to enable Data Flash function */
     if (FMC_ReadConfig(au32Config, 2) < 0){
 		SYS_LockReg();
+
+#if MICROPY_PY_THREAD
+		xSemaphoreGive(s_tStorIfMutex);
+#endif
+
         return eSTORIF_ERRNO_STOR_OPEN;
     }
 
@@ -58,6 +85,10 @@ StorIF_Flash_Init(
             /* Disable FMC ISP function */
             FMC_Close();
             SYS_LockReg();
+            
+#if MICROPY_PY_THREAD
+			xSemaphoreGive(s_tStorIfMutex);
+#endif
             return -1;
         }
 
@@ -66,6 +97,10 @@ StorIF_Flash_Init(
         SYS->IPRST0 = SYS_IPRST0_CHIPRST_Msk;
     }
 //        printf("flash open \n");
+#if MICROPY_PY_THREAD
+	xSemaphoreGive(s_tStorIfMutex);
+#endif
+
 	return eSTORIF_ERRNO_NONE;
 }
 
@@ -82,6 +117,9 @@ StorIF_Flash_ReadSector(
     int32_t i32ReadCnt = u32Count;
 	int i;
 
+#if MICROPY_PY_THREAD
+	xSemaphoreTake(s_tStorIfMutex, portMAX_DELAY);
+#endif
 	
 	u32FlashAddr =  (u32Sector + DATA_FLASH_STORAGE_LBA_OFFSET) * DATA_FLASH_SECTOR_SIZE;
  	
@@ -94,6 +132,10 @@ StorIF_Flash_ReadSector(
 		pu32Buf = (uint32_t *)pu8Buff;
 		i32ReadCnt --;
 	}
+	
+#if MICROPY_PY_THREAD
+	xSemaphoreGive(s_tStorIfMutex);
+#endif
 	
 	return u32Count;
 }
@@ -135,6 +177,9 @@ StorIF_Flash_WriteSector(
     uint32_t *pu32TempAddr;
 	int32_t i;
 
+#if MICROPY_PY_THREAD
+	xSemaphoreTake(s_tStorIfMutex, portMAX_DELAY);
+#endif
 
 	u32FlashAddr =  (u32Sector + DATA_FLASH_STORAGE_LBA_OFFSET) * DATA_FLASH_SECTOR_SIZE;
 	i32WriteLen = u32Count * DATA_FLASH_SECTOR_SIZE;
@@ -192,6 +237,10 @@ StorIF_Flash_WriteSector(
 		while(i32WriteLen > 0);
 
 	}
+
+#if MICROPY_PY_THREAD
+	xSemaphoreGive(s_tStorIfMutex);
+#endif
 
 	return u32Count;
 }

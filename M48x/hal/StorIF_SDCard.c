@@ -13,7 +13,30 @@
 #include "py/obj.h"
 #include "mods/pybirq.h"
 
-#include "SDCard.h"
+//#include "SDCard.h"
+#include "StorIF.h"
+
+#if MICROPY_PY_THREAD
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+
+static xSemaphoreHandle s_tStorIfMutex;
+
+
+#endif
+
+typedef struct sdcard_info_t
+{
+    unsigned int    CardType;       /*!< SDHC, SD, or MMC */
+    unsigned int    RCA;            /*!< Relative card address */
+    unsigned char   IsCardInsert;   /*!< Card insert state */
+    unsigned int    totalSectorN;   /*!< Total sector number */
+    unsigned int    diskSize;       /*!< Disk size in K bytes */
+    int             sectorSize;     /*!< Sector size in bytes */
+} S_SDCARD_INFO;                       /*!< Structure holds SD card info */
+
+
 
 #define Sector_Size 512   //512 bytes
 static uint32_t Tmp_Buffer[Sector_Size];
@@ -24,7 +47,7 @@ static SDH_INFO_T *s_psSDInfo = &SD0;
 void SDH0_IRQHandler(void)
 {
     unsigned int volatile isr;
-    unsigned int volatile ier;
+//    unsigned int volatile ier;
 
 	IRQ_ENTER(SDH0_IRQn);
     // FMI data abort interrupt
@@ -74,14 +97,14 @@ void SDH0_IRQHandler(void)
     {
         if (!(isr & SDH_INTSTS_CRC16_Msk))
         {
-            //printf("***** ISR sdioIntHandler(): CRC_16 error !\n");
+            printf("***** ISR sdioIntHandler(): CRC_16 error !\n");
             // handle CRC error
         }
         else if (!(isr & SDH_INTSTS_CRC7_Msk))
         {
             if (!g_u8R3Flag)
             {
-                //printf("***** ISR sdioIntHandler(): CRC_7 error !\n");
+                printf("***** ISR sdioIntHandler(): CRC_7 error !\n");
                 // handle CRC error
             }
         }
@@ -104,26 +127,36 @@ void SDH0_IRQHandler(void)
 	IRQ_EXIT(SDH0_IRQn);
 }
 
+//TODO: SD1 interrupt handler
 
 
-int32_t SDCard_Init(void){
-    //for SD0
 
-    /* select multi-function pin */
-    SYS->GPE_MFPL &= ~(SYS_GPE_MFPL_PE7MFP_Msk     | SYS_GPE_MFPL_PE6MFP_Msk     | SYS_GPE_MFPL_PE3MFP_Msk      | SYS_GPE_MFPL_PE2MFP_Msk);
-    SYS->GPE_MFPL |=  (SYS_GPE_MFPL_PE7MFP_SD0_CMD | SYS_GPE_MFPL_PE6MFP_SD0_CLK | SYS_GPE_MFPL_PE3MFP_SD0_DAT1 | SYS_GPE_MFPL_PE2MFP_SD0_DAT0);
+static int32_t SDCard_Init(void){
 
-    SYS->GPB_MFPL &= ~(SYS_GPB_MFPL_PB5MFP_Msk      | SYS_GPB_MFPL_PB4MFP_Msk);
-    SYS->GPB_MFPL |=  (SYS_GPB_MFPL_PB5MFP_SD0_DAT3 | SYS_GPB_MFPL_PB4MFP_SD0_DAT2);
+	if(s_pSDH == SDH0){
+		//for SD0
 
-    SYS->GPD_MFPH &= ~(SYS_GPD_MFPH_PD13MFP_Msk);
-    SYS->GPD_MFPH |=  (SYS_GPD_MFPH_PD13MFP_SD0_nCD);
+		/* select multi-function pin */
+		SYS->GPE_MFPL &= ~(SYS_GPE_MFPL_PE7MFP_Msk     | SYS_GPE_MFPL_PE6MFP_Msk     | SYS_GPE_MFPL_PE3MFP_Msk      | SYS_GPE_MFPL_PE2MFP_Msk);
+		SYS->GPE_MFPL |=  (SYS_GPE_MFPL_PE7MFP_SD0_CMD | SYS_GPE_MFPL_PE6MFP_SD0_CLK | SYS_GPE_MFPL_PE3MFP_SD0_DAT1 | SYS_GPE_MFPL_PE2MFP_SD0_DAT0);
 
-    /* Select IP clock source */
-    CLK_SetModuleClock(SDH0_MODULE, CLK_CLKSEL0_SDH0SEL_PLL, CLK_CLKDIV0_SDH0(10));
+		SYS->GPB_MFPL &= ~(SYS_GPB_MFPL_PB5MFP_Msk      | SYS_GPB_MFPL_PB4MFP_Msk);
+		SYS->GPB_MFPL |=  (SYS_GPB_MFPL_PB5MFP_SD0_DAT3 | SYS_GPB_MFPL_PB4MFP_SD0_DAT2);
 
-    /* Enable IP clock */
-    CLK_EnableModuleClock(SDH0_MODULE);
+		SYS->GPD_MFPH &= ~(SYS_GPD_MFPH_PD13MFP_Msk);
+		SYS->GPD_MFPH |=  (SYS_GPD_MFPH_PD13MFP_SD0_nCD);
+
+		/* Select IP clock source */
+		CLK_SetModuleClock(SDH0_MODULE, CLK_CLKSEL0_SDH0SEL_PLL, CLK_CLKDIV0_SDH0(10));
+
+		/* Enable IP clock */
+		CLK_EnableModuleClock(SDH0_MODULE);
+	}
+	else{
+		//TODO for SD1
+
+	}
+
 
     SystemCoreClockUpdate();
 
@@ -134,12 +167,7 @@ int32_t SDCard_Init(void){
     return 0;
 }
 
-
-int32_t SDCard_CardDetection(void){
-    return SDH_CardDetection(s_pSDH);
-}
-
-int32_t SDCard_Read (
+static int32_t SDCard_Read (
     uint8_t *buff,     /* Data buffer to store read data */
     uint32_t sector,   /* Sector address (LBA) */
     uint32_t count      /* Number of sectors to read (1..128) */
@@ -181,7 +209,7 @@ int32_t SDCard_Read (
 }
 
 
-int32_t SDCard_Write (
+static int32_t SDCard_Write (
     const uint8_t *buff,   /* Data to be written */
     uint32_t sector,       /* Sector address (LBA) */
     uint32_t count          /* Number of sectors to write (1..128) */
@@ -192,7 +220,7 @@ int32_t SDCard_Write (
     uint32_t tmp_StartBufAddr;
     uint32_t volatile i;
 
-    //printf("disk_write - drv:%d, sec:%d, cnt:%d, buff:0x%x\n", pdrv, sector, count, (uint32_t)buff);
+//    printf("disk_write - sec:%d, cnt:%d, buff:0x%x\n", sector, count, (uint32_t)buff);
     if ((uint32_t)buff%4)
     {
         shift_buf_flag = 1;
@@ -227,19 +255,127 @@ int32_t SDCard_Write (
     return ret;
 }
 
-int32_t SDCard_GetCardInfo(
-    S_SDCARD_INFO *psCardInfo
+static E_STORIF_ERRNO
+StorIF_SDCard_Init(
+	int32_t i32Inst,
+	void **ppStorRes
 )
 {
-    psCardInfo->CardType =  s_psSDInfo->CardType;
-    psCardInfo->RCA = s_psSDInfo->RCA;
-    psCardInfo->IsCardInsert = s_psSDInfo->IsCardInsert;
-    psCardInfo->totalSectorN = s_psSDInfo->totalSectorN; 
-    psCardInfo->diskSize = s_psSDInfo->diskSize;
-    psCardInfo->sectorSize = s_psSDInfo->sectorSize;
+	if(i32Inst == 0){
+		s_pSDH = SDH0;
+		s_psSDInfo = &SD0;
+	}
+	else if(i32Inst == 1){
+		s_pSDH = SDH1;
+		s_psSDInfo = &SD1;
+	}
+	else{
+		return eSTORIF_ERRNO_IO;
+	}
 
-    return 0;
+#if MICROPY_PY_THREAD
+	s_tStorIfMutex = xSemaphoreCreateMutex();
+
+	if(s_tStorIfMutex == NULL){
+		printf("Unable create SD card mutex\n");
+		return eSTORIF_ERRNO_NULL_PTR;
+	}
+	
+	xSemaphoreTake(s_tStorIfMutex, portMAX_DELAY);
+#endif
+
+	SDCard_Init();
+	
+#if MICROPY_PY_THREAD
+	xSemaphoreGive(s_tStorIfMutex);
+#endif
+
+	return eSTORIF_ERRNO_NONE;
 }
+
+
+static int32_t
+StorIF_SDCard_ReadSector(
+	uint8_t *pu8Buff,		/* Data buffer to store read data */
+	uint32_t u32Sector,		/* Sector address (LBA) */
+	uint32_t u32Count,		/* Number of sectors to read (1..128) */
+	void *pvStorRes
+)
+{
+	int32_t i32Ret;
+
+#if MICROPY_PY_THREAD	
+	xSemaphoreTake(s_tStorIfMutex, portMAX_DELAY);
+#endif
+
+	i32Ret = SDCard_Read(pu8Buff, u32Sector, u32Count);
+
+#if MICROPY_PY_THREAD	
+	xSemaphoreGive(s_tStorIfMutex);
+#endif
+
+	return i32Ret;
+}
+
+static int32_t
+StorIF_SDCard_WriteSector(
+	uint8_t *pu8Buff,		/* Data buffer to store read data */
+	uint32_t u32Sector,		/* Sector address (LBA) */
+	uint32_t u32Count,		/* Number of sectors to read (1..128) */
+	void *pvStorRes
+)
+{
+	int32_t i32Ret;
+
+#if MICROPY_PY_THREAD	
+	xSemaphoreTake(s_tStorIfMutex, portMAX_DELAY);
+#endif
+
+	i32Ret = SDCard_Write(pu8Buff, u32Sector, u32Count);
+
+#if MICROPY_PY_THREAD	
+	xSemaphoreGive(s_tStorIfMutex);
+#endif
+
+	return i32Ret;
+}
+
+
+static int32_t
+StorIF_SDCard_Detect(
+	void *pvStorRes
+)
+{
+	return SDH_CardDetection(s_pSDH);
+}
+
+static E_STORIF_ERRNO
+StorIF_SDCard_GetInfo(
+	S_STORIF_INFO *psInfo,
+	void *pvStorRes
+)
+{
+//	printf("StorIF_SDCard_GetInfo, s_psSDInfo->totalSectorN %d \n", s_psSDInfo->totalSectorN);
+//	printf("StorIF_SDCard_GetInfo, s_psSDInfo->diskSize %d \n", s_psSDInfo->diskSize);
+//	printf("StorIF_SDCard_GetInfo, s_psSDInfo->sectorSize %d \n", s_psSDInfo->sectorSize);
+
+
+	psInfo->u32TotalSector = s_psSDInfo->totalSectorN; 
+	psInfo->u32DiskSize = s_psSDInfo->diskSize;
+	psInfo->u32SectorSize = s_psSDInfo->sectorSize;
+	psInfo->u32SubType = s_psSDInfo->CardType;
+
+	return eSTORIF_ERRNO_NONE;
+}
+
+
+const S_STORIF_IF g_STORIF_sSDCard = {
+	.pfnStorInit = StorIF_SDCard_Init,
+	.pfnReadSector = StorIF_SDCard_ReadSector,
+	.pfnWriteSector = StorIF_SDCard_WriteSector,
+	.pfnDetect = StorIF_SDCard_Detect,
+	.pfnGetInfo = StorIF_SDCard_GetInfo,
+};
 
 
 

@@ -60,7 +60,7 @@
 #define MICROPY_HW_CAN1_TXD  (pin_C10) //D3
 
 //USB
-#define MICROPY_HW_ENABLE_USBD		(1)
+#define MICROPY_HW_ENABLE_USBD		(0)
 
 //Switch
 #define MICROPY_HW_USRSW_PRESSED		(0)

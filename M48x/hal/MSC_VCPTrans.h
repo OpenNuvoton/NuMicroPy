@@ -1,35 +1,71 @@
 /***************************************************************************//**
- * @file     MSC_Trans.h
- * @brief    M480 series USB class transfer code for MSC
+ * @file    MSC_VCPTrans.h
+ * @brief    M480 series USB class transfer code for VCP and MSC
  * @version  0.0.1
  *
- * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
+ * @copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 
-#ifndef __MSC_TRANS_H__
-#define __MSC_TRANS_H__
+#ifndef __MSC_VCPTRANS_H__
+#define __MSC_VCPTRANS_H__
 
 /* Define EP maximum packet size */
-#define EP0_MSC_MAX_PKT_SIZE    64
-#define EP1_MSC_MAX_PKT_SIZE    EP0_MSC_MAX_PKT_SIZE
-#define EP2_MSC_MAX_PKT_SIZE    64
-#define EP3_MSC_MAX_PKT_SIZE    64
+#define EP0_MSC_VCP_MAX_PKT_SIZE    64
+#define EP1_MSC_VCP_MAX_PKT_SIZE    EP0_MSC_VCP_MAX_PKT_SIZE
+#define EP2_VCP_MAX_PKT_SIZE    64
+#define EP3_VCP_MAX_PKT_SIZE    64
+#define EP4_VCP_MAX_PKT_SIZE    8
+#define EP5_MSC_MAX_PKT_SIZE    64
+#define EP6_MSC_MAX_PKT_SIZE    64
 
-#define SETUP_MSC_BUF_BASE      0
-#define SETUP_MSC_BUF_LEN       8
-#define EP0_MSC_BUF_BASE        (SETUP_MSC_BUF_BASE + SETUP_MSC_BUF_LEN)
-#define EP0_MSC_BUF_LEN         EP0_MSC_MAX_PKT_SIZE
-#define EP1_MSC_BUF_BASE        (SETUP_MSC_BUF_BASE + SETUP_MSC_BUF_LEN)
-#define EP1_MSC_BUF_LEN         EP1_MSC_MAX_PKT_SIZE
-#define EP2_MSC_BUF_BASE        (EP1_MSC_BUF_BASE + EP1_MSC_BUF_LEN)
-#define EP2_MSC_BUF_LEN         EP2_MSC_MAX_PKT_SIZE
-#define EP3_MSC_BUF_BASE        (EP2_MSC_BUF_BASE + EP2_MSC_BUF_LEN)
-#define EP3_MSC_BUF_LEN         EP3_MSC_MAX_PKT_SIZE
+#define SETUP_MSC_VCP_BUF_BASE      0
+#define SETUP_MSC_VCP_BUF_LEN       8
+#define EP0_MSC_VCP_BUF_BASE        (SETUP_MSC_VCP_BUF_BASE + SETUP_MSC_VCP_BUF_LEN)
+#define EP0_MSC_VCP_BUF_LEN         EP0_MSC_VCP_MAX_PKT_SIZE
+#define EP1_MSC_VCP_BUF_BASE        (SETUP_MSC_VCP_BUF_BASE + SETUP_MSC_VCP_BUF_LEN)
+#define EP1_MSC_VCP_BUF_LEN         EP1_MSC_VCP_MAX_PKT_SIZE
+#define EP2_VCP_BUF_BASE        	(EP1_MSC_VCP_BUF_BASE + EP1_MSC_VCP_BUF_LEN)
+#define EP2_VCP_BUF_LEN         	EP2_VCP_MAX_PKT_SIZE
+#define EP3_VCP_BUF_BASE        	(EP2_VCP_BUF_BASE + EP2_VCP_BUF_LEN)
+#define EP3_VCP_BUF_LEN         	EP3_VCP_MAX_PKT_SIZE
+#define EP4_VCP_BUF_BASE       		(EP3_VCP_BUF_BASE + EP3_VCP_BUF_LEN)
+#define EP4_VCP_BUF_LEN        		EP4_VCP_MAX_PKT_SIZE
+#define EP5_MSC_BUF_BASE        	(EP4_VCP_BUF_BASE + EP4_VCP_BUF_LEN)
+#define EP5_MSC_BUF_LEN         	EP5_MSC_MAX_PKT_SIZE
+#define EP6_MSC_BUF_BASE        	(EP5_MSC_BUF_BASE + EP5_MSC_BUF_LEN)
+#define EP6_MSC_BUF_LEN         	EP6_MSC_MAX_PKT_SIZE
 
-/* Define the interrupt In EP number */
-#define MSC_BULK_IN_EP_NUM      0x02
-#define MSC_BULK_OUT_EP_NUM     0x03
 
+/* Define the EP number */
+#define VCP_BULK_IN_EP_NUM        0x02
+#define VCP_BULK_OUT_EP_NUM       0x03
+#define VCP_INT_IN_EP_NUM         0x04
+#define MSC_BULK_IN_EP_NUM      0x05
+#define MSC_BULK_OUT_EP_NUM     0x06
+
+/*!<Define CDC Class Specific Request */
+#define SET_LINE_CODE           0x20
+#define GET_LINE_CODE           0x21
+#define SET_CONTROL_LINE_STATE  0x22
+
+/************************************************/
+/* for CDC class */
+/* Line coding structure
+  0-3 dwDTERate    Data terminal rate (baudrate), in bits per second
+  4   bCharFormat  Stop bits: 0 - 1 Stop bit, 1 - 1.5 Stop bits, 2 - 2 Stop bits
+  5   bParityType  Parity:    0 - None, 1 - Odd, 2 - Even, 3 - Mark, 4 - Space
+  6   bDataBits    Data bits: 5, 6, 7, 8, 16  */
+
+typedef struct
+{
+    uint32_t  u32DTERate;     /* Baud rate    */
+    uint8_t   u8CharFormat;   /* stop bit     */
+    uint8_t   u8ParityType;   /* parity       */
+    uint8_t   u8DataBits;     /* data bits    */
+} STR_VCOM_LINE_CODING;
+
+
+/*!<Define Mass storage Class Specific Request */
 #define LEN_CONFIG_AND_SUBORDINATE      (LEN_CONFIG+LEN_INTERFACE+LEN_ENDPOINT*2)
 
 /*!<Define Mass Storage Class Specific Request */
@@ -73,6 +109,35 @@ static __INLINE uint32_t get_be32(uint8_t *buf)
 }
 
 
+/*------------------------------------------*/
+//VCP send/recv function
+
+int32_t VCPTrans_BulkInHandler();
+
+int32_t VCPTrans_StartBulkIn(
+	uint8_t *pu8DataBuf,
+	uint32_t u32DataBufLen
+);
+
+int32_t VCPTrans_BulkInSendedLen();
+
+int32_t VCPTrans_BulkInCanSend();
+
+void VCPTrans_StopBulkIn();
+
+int32_t VCPTrans_BulkOutHandler(
+	uint8_t *pu8EPBuf, 
+	uint32_t u32Size
+);
+
+int32_t VCPTrans_BulkOutCanRecv();
+
+int32_t VCPTrans_BulkOutRecv(
+	uint8_t *pu8DataBuf,
+	uint32_t u32DataBufLen
+);
+
+
 /******************************************************************************/
 /*                USBD Mass Storage Structure                                 */
 /******************************************************************************/
@@ -109,17 +174,15 @@ struct CSW
 #define STORAGE_BUFFER_SIZE 512               /* Data transfer buffer size in 512 bytes alignment */
 #define UDC_SECTOR_SIZE   512               /* logic sector size */
 
-/*-----------------------------------------------------------------*/
-void MSCTrans_Init(
+/*------------------------------------------*/
+void MSCVCPTrans_ClassRequest(void);
+void MSCVCPTrans_Init(
 	S_USBD_INFO_T *psUSBDevInfo
 );
-
 void MSCTrans_SetConfig(void);
-
 void MSCTrans_BulkInHandler(void);
 void MSCTrans_BulkOutHandler(void);
-
-void MSCTrans_ClassRequest(void);
 void MSCTrans_ProcessCmd(void);
+
 
 #endif
