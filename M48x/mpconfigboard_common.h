@@ -147,6 +147,16 @@
 #define MICROPY_HW_HAS_LED (1)
 #endif
 
+#if !defined(MICROPY_LVGL)
+#if defined (MICROPY_NAU88L25_I2C_SCL)
+#define MICROPY_PY_MACHINE_AUDIO (1)
+#else
+#define MICROPY_PY_MACHINE_AUDIO (0)
+#endif
+#else
+#define MICROPY_PY_MACHINE_AUDIO (0)
+#endif
+
 
 // Pin definition header file
 #define MICROPY_PIN_DEFS_PORT_H "hal/pin_defs_m48x.h"

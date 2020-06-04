@@ -196,6 +196,7 @@ int dma_channel_allocate(uint32_t capabilities)
     }
 
     int i = nu_cto(dma_chn_mask);
+	i =2;
     if (i != 32) {
         dma_chn_mask |= 1 << i;
         memset(dma_chn_arr + i - NU_PDMA_CH_Pos, 0x00, sizeof (struct nu_dma_chn_s));
@@ -330,7 +331,8 @@ int dma_fill_description(
 	uint32_t addr_src, 
 	uint32_t addr_dst, 
 	int32_t length, 
-	uint32_t timeout 
+	uint32_t timeout, 
+	uint32_t u32ScatterEn 
 )
 {
 		PDMA_T * pdma;
@@ -350,40 +352,55 @@ int dma_fill_description(
 		//printf("[%s] pdma=%08x, ch=%d, peripheral=%d, data_width=%d, addr_src=%08x, addr_dst=%08x, len=%d, to=%d \r\n", __func__, pdma, channelid, u32Peripheral, data_width, addr_src, addr_dst, length, timeout  );
 		PDMA_DisableTimeout ( pdma,	1<<channelid );
 
-		
-		// void PDMA_SetTransferMode(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32Peripheral, uint32_t u32ScatterEn, uint32_t u32DescAddr)
-		PDMA_SetTransferMode ( 	pdma,	
+
+		if(u32ScatterEn){
+			// void PDMA_SetTransferMode(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32Peripheral, uint32_t u32ScatterEn, uint32_t u32DescAddr)
+			printf("dma_fill_description %d, %x \n", channelid, addr_src);
+			PDMA_SetTransferMode ( 	pdma,	
+															channelid,
+															u32Peripheral, 
+															1, 
+															addr_src);
+		}
+		else{
+			
+			// void PDMA_SetTransferMode(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32Peripheral, uint32_t u32ScatterEn, uint32_t u32DescAddr)
+			PDMA_SetTransferMode ( 	pdma,	
+															channelid,
+															u32Peripheral, 
+															0, 
+															0);
+			//	void PDMA_SetTransferCnt(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32Width, uint32_t u32TransCount)
+			PDMA_SetTransferCnt ( pdma, 
+														channelid, 
+														(data_width == 8) ? PDMA_WIDTH_8 : (data_width == 16) ? PDMA_WIDTH_16 : PDMA_WIDTH_32,
+														length );
+					
+			// void PDMA_SetTransferAddr(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32SrcAddr, uint32_t u32SrcCtrl, uint32_t u32DstAddr, uint32_t u32DstCtrl)
+			PDMA_SetTransferAddr ( pdma,
+															 channelid,
+								   addr_src,  // NOTE:
+								   // NUC472: End of source address
+								   // M451: Start of source address
+								   // M480: Start of source address
+								   u32SrcCtrl,//hal_dma_check_fixed_addr(u32Peripheral)?PDMA_SAR_FIX:PDMA_SAR_INC,   	// check source address is incremental or fixed
+								   addr_dst,  			// Destination address
+								   u32DstCtrl);//hal_dma_check_fixed_addr(u32Peripheral)?PDMA_DAR_FIX:PDMA_DAR_INC);  	// check destination address is incremental or fixed
+
+				//	void PDMA_SetBurstType(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32BurstType, uint32_t u32BurstSize)
+			PDMA_SetBurstType ( pdma,
 														channelid,
-														u32Peripheral, 
-														0, 
-														0);
-		//	void PDMA_SetTransferCnt(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32Width, uint32_t u32TransCount)
-		PDMA_SetTransferCnt ( pdma, 
-													channelid, 
-													(data_width == 8) ? PDMA_WIDTH_8 : (data_width == 16) ? PDMA_WIDTH_16 : PDMA_WIDTH_32,
-													length );
-				
-		// void PDMA_SetTransferAddr(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32SrcAddr, uint32_t u32SrcCtrl, uint32_t u32DstAddr, uint32_t u32DstCtrl)
-		PDMA_SetTransferAddr ( pdma,
-														 channelid,
-							   addr_src,  // NOTE:
-							   // NUC472: End of source address
-							   // M451: Start of source address
-							   // M480: Start of source address
-							   u32SrcCtrl,//hal_dma_check_fixed_addr(u32Peripheral)?PDMA_SAR_FIX:PDMA_SAR_INC,   	// check source address is incremental or fixed
-							   addr_dst,  			// Destination address
-							   u32DstCtrl);//hal_dma_check_fixed_addr(u32Peripheral)?PDMA_DAR_FIX:PDMA_DAR_INC);  	// check destination address is incremental or fixed
+								PDMA_REQ_SINGLE,    // Single mode
+								0); // Burst size
 
-			//	void PDMA_SetBurstType(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32BurstType, uint32_t u32BurstSize)
-		PDMA_SetBurstType ( pdma,
-													channelid,
-							PDMA_REQ_SINGLE,    // Single mode
-							0); // Burst size
-
+		}
+		
 		PDMA_EnableInt (  pdma,	channelid, PDMA_INT_TRANS_DONE); // Interrupt type		
 
-		fill_pdma_timeout( pdma, channelid, timeout );
-		
+		if(!u32ScatterEn){
+			fill_pdma_timeout( pdma, channelid, timeout );
+		}
+			
 		dma_enable_channel (pdma, channelid);
 
 		return 0;
@@ -391,6 +408,69 @@ int dma_fill_description(
 exit_hal_dma_fill_description:
 	
 		return -1;
+}
+
+static inline void nu_pdma_channel_reset(int i32ChannID)
+{
+	PDMA_T * pdma;
+	
+	pdma = dma_modbase();
+    pdma->CHRST = (1 << i32ChannID);
+}
+
+void dma_channel_terminate(int i32ChannID)
+{
+    int i;
+    uint32_t u32EnabledChans;
+    int ch_mask = 0;
+	PDMA_T * pdma;
+	
+	pdma = dma_modbase();
+    
+    if (!(dma_chn_mask & (1 << i32ChannID)))
+        goto exit_dma_channel_terminate;
+
+   // Suspend all channels.
+    u32EnabledChans = dma_chn_mask & NU_PDMA_CH_Msk;
+    while ((i = nu_ctz(u32EnabledChans)) != 32)
+    {
+        ch_mask = (1 << i);
+        if (i == i32ChannID)
+        {
+            u32EnabledChans &= ~ch_mask;
+            continue;
+        }
+
+        // Pause the channel
+        PDMA_PAUSE(pdma, i);
+
+        // Wait for channel to finish current transfer
+        while (pdma->TACTSTS & ch_mask) { }
+
+        u32EnabledChans &= ~ch_mask;
+    } //while
+
+   // Reset specified channel ID
+    nu_pdma_channel_reset(i32ChannID);
+
+    // Clean descriptor table control register.
+    pdma->DSCT[i32ChannID].CTL = 0UL;
+
+    // Resume all channels.
+    u32EnabledChans = dma_chn_mask & NU_PDMA_CH_Msk;
+
+    while ((i = nu_ctz(u32EnabledChans)) != 32)
+    {
+        ch_mask = (1 << i);
+
+        pdma->CHCTL |= ch_mask;
+        PDMA_Trigger(pdma, i);
+        u32EnabledChans &= ~ch_mask;
+    }
+    
+exit_dma_channel_terminate:
+
+    return;
 }
 
 

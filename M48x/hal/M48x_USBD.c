@@ -157,22 +157,19 @@ int32_t USBDEV_VCPSendData(
 	if(pu8DataBuf == NULL)
 		return i32SendedLen;
 			
-	i32SendedLen = VCPTrans_StartBulkIn(pu8DataBuf, u32DataBufLen);
+	i32SendedLen = VCPTrans_BulkInSend(pu8DataBuf, u32DataBufLen);
 	
 	uint32_t u32SendTime = mp_hal_ticks_ms();
 	
 	while((mp_hal_ticks_ms() - u32SendTime) < u32Timeout){
-		if(i32SendedLen != VCPTrans_BulkInSendedLen()){
-			u32SendTime = mp_hal_ticks_ms();
-			i32SendedLen = VCPTrans_BulkInSendedLen();
-		}
-		
-		if(i32SendedLen ==  u32DataBufLen)
+		if((i32SendedLen >=  u32DataBufLen))
 			break;
+
+		if(VCPTrans_BulkInCanSend()){
+			i32SendedLen += VCPTrans_BulkInSend(pu8DataBuf + i32SendedLen, u32DataBufLen);
+		}
 	}
-
-	VCPTrans_StopBulkIn();
-
+	
 	return i32SendedLen;
 }
 

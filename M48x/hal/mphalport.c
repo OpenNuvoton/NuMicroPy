@@ -176,11 +176,11 @@ static void SendStr_ToUSB(char *ptr, int len)
 	
 	if(psUSBState->eUSBMode != eUSBDEV_MODE_MSC_VCP)
 		return;
-	
+		
 	if(!USBDEV_VCPCanSend(psUSBState))
 		return;
-		
-	USBDEV_VCPSendData((uint8_t *)ptr, len, 10, psUSBState);
+	
+	USBDEV_VCPSendData((uint8_t *)ptr, len, 0, psUSBState);
 
 //	if(ptr[len] == '\n')
 //	{
@@ -205,6 +205,7 @@ static char RecvChar_FromUSB(void)
 			USBDEV_VCPRecvData((uint8_t *)&chTemp,1 ,10, psUSBState);
 			return chTemp;
 		}
+		vTaskDelay(1);
 	}
 }
 
@@ -262,7 +263,6 @@ void mp_hal_stdout_tx_strn(const char *str, size_t len) {
 
 #if defined (REPL_TO_USB)
     int ret = REPL_write(1, (char *)str, len);
-	vTaskDelay(1);
 #else
     int ret = write(1, str, len);
 #endif
@@ -273,8 +273,6 @@ void mp_hal_stdout_tx_strn(const char *str, size_t len) {
 
 // Efficiently convert "\n" to "\r\n"
 void mp_hal_stdout_tx_strn_cooked(const char *str, size_t len) {
-//    mp_hal_stdout_tx_strn(str, len);
-
     const char *last = str;
     while (len--) {
         if (*str == '\n') {

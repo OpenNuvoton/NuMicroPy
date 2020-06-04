@@ -323,12 +323,6 @@ STATIC bool init_sdcard_fs(void) {
                 }
             }
 
-            {
-                if (first_part) {
-                    // use SD card as current directory
-                    MP_STATE_PORT(vfs_cur) = vfs;
-                }
-            }
             first_part = false;
         }
     }
@@ -360,10 +354,12 @@ STATIC StackType_t mp_usbtask_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8
 #endif
 
 STATIC char mp_task_heap[MP_TASK_HEAP_SIZE]__attribute__((aligned (8)));
+STATIC volatile bool mp_USBRun;
+
 
 static void ExecuteUsbMSC(void){
 	S_USBDEV_STATE *psUSBDev_msc_state = NULL;
-	psUSBDev_msc_state = USBDEV_Init(USBD_VID, USBD_MSC_PID, eUSBDEV_MODE_MSC_VCP);
+	psUSBDev_msc_state = USBDEV_Init(USBD_VID, USBD_MSC_VCP_PID, eUSBDEV_MODE_MSC_VCP);
 	if(psUSBDev_msc_state == NULL){
 		mp_raise_ValueError("bad USB mode");
 	}
@@ -374,7 +370,7 @@ static void ExecuteUsbMSC(void){
 		USBDEV_Start(psUSBDev_msc_state);
 		printf("Start USB device MSC and VCP \n");
 
-		while(1)
+		while(USBD_IS_ATTACHED())
 		{
 			MSCTrans_ProcessCmd();
 		}
@@ -382,6 +378,10 @@ static void ExecuteUsbMSC(void){
 	else{
 		USBDEV_Deinit(psUSBDev_msc_state);
 	}
+
+	mp_USBRun = false;
+	printf("ExecuteUsbMSC exit \n");
+	vTaskDelete(NULL);
 }
 
 void mp_usbtask(void *pvParameter) {
@@ -394,19 +394,18 @@ void mp_task(void *pvParameter) {
 	bool mounted_sdcard = false;
 	bool mounted_flash = false;
 	bool mounted_spiflash = false;
+	bool OnlyMSCVCPMode = false;
 
 	#if MICROPY_PY_THREAD
 	mp_thread_init(&mp_task_stack[0], MP_TASK_STACK_LEN);
 	#endif
-
 	
-#if 0
 	//Detect sw2 button press or not
 	if(mp_hal_pin_read(MICROPY_HW_USRSW_SW2_PIN) == 0){
 		//execute USB mass storage mode and export internal flash
-		ExecuteUsbMSC();
+		OnlyMSCVCPMode = true;
+		printf("Run only MSC and VCP mode \n");
 	}
-#endif
 
 soft_reset:
 	// initialise the stack pointer for the main thread
@@ -422,6 +421,7 @@ soft_reset:
 	pin_init0();
 	extint_init0();
 
+
    // Initialise the local flash filesystem.
 #if MICROPY_HW_HAS_FLASH
 
@@ -435,8 +435,7 @@ soft_reset:
 	mounted_spiflash = init_spiflash_fs();
 #endif
 
-
-#if 0 //MICROPY_HW_HAS_SDCARD
+#if MICROPY_HW_HAS_SDCARD
 	// if an SD card is present then mount it on /sd/
 	if (sdcard_is_present()) {
 		// if there is a file in the flash called "SKIPSD", then we don't mount the SD card
@@ -444,40 +443,41 @@ soft_reset:
 	}
 #endif
 
+
 #if MICROPY_PY_THREAD
 
 	//Open MSC and VCP
 
 	TaskHandle_t mpUSBTaskHandle;
 
+	mp_USBRun = true;
     mpUSBTaskHandle = xTaskCreateStatic(mp_usbtask, "USB_MSCVCP",
         MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, mp_usbtask_stack, &mp_usbtask_tcb);
 
     if (mpUSBTaskHandle == NULL){
 		__fatal_error("FreeRTOS create USB task!");
 	}
-	
 
 	S_USBDEV_STATE *psUSBDevState;
 	while(1){
 		psUSBDevState = USBDEV_UpdateState();
 
-		if(psUSBDevState->bConnected){
+		if(mp_USBRun == false)
 			break;
+
+		if(OnlyMSCVCPMode == false){
+			if(psUSBDevState->bConnected)
+				break;
 		}
 		vTaskDelay(1);
 	}
 
-	vTaskDelay(100);
+	vTaskDelay(500);
 	
+	printf("Start execute boot.py and main.py \n");
 #endif
 
-	// set sys.path based on mounted filesystems (/sd is first so it can override /flash)
-	if (mounted_sdcard) {
-		mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_sd));
-		mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_sd_slash_lib));
-	}
-	
+	// set sys.path based on mounted filesystems (/sd is first so it can override /flash)	
 	if (mounted_spiflash) {
         mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_spiflash));
         mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_spiflash_slash_lib));
@@ -487,6 +487,11 @@ soft_reset:
         mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_flash));
         mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_flash_slash_lib));
     }
+
+	if (mounted_sdcard) {
+		mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_sd));
+		mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_sd_slash_lib));
+	}
 
 #if MICROPY_PY_NETWORK
     mod_network_init();
@@ -502,6 +507,7 @@ soft_reset:
 		pyexec_file("main.py");
 	}
 
+	printf("Run REPL \n");
 	for (;;) {
 		if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
 			if (pyexec_raw_repl() != 0) {
@@ -540,13 +546,9 @@ int main (void)
 	/* Init UART to 115200-8n1 for print message */
 	UART_Open(UART0, 115200);
 
-	/*
-	This sample code sets I2C bus clock to 100kHz. Then, Master accesses Slave with Byte Write
-	and Byte Read operations, and check if the read data is equal to the programmed data.
-	*/
-
 	printf("+-------------------------------------------------------+\n");
 	printf("|          Micropython Code for Nuvoton M48x            |\n");
+	printf("|                     Debug Console                     |\n");	
 	printf("+-------------------------------------------------------+\n");
 
 #if MICROPY_HW_HAS_FLASH

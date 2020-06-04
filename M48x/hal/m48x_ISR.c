@@ -79,6 +79,7 @@
 #include "hal/M48x_SPI.h"
 #include "hal/M48x_USBD.h"
 #include "hal/M48x_UART.h"
+#include "hal/M48x_I2S.h"
 #include "hal/dma.h"
 
 #if MICROPY_LVGL
@@ -708,5 +709,11 @@ void EPWM1P2_IRQHandler(void)
 	IRQ_EXIT(EPWM1P2_IRQn);
 }
 
+void I2S0_IRQHandler(void)
+{
+	IRQ_ENTER(I2S0_IRQn);
+	Handle_I2S_Irq(I2S0);
+	IRQ_EXIT(I2S0_IRQn);
+}
 
 

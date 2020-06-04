@@ -52,12 +52,14 @@ int dma_fill_description(
 	int channelid, 
 	uint32_t u32Peripheral, 
 	uint32_t data_width, 
-	uint32_t addr_src, 
+	uint32_t addr_src,		//For u32ScatterEn case, it is scatter gather table address
 	uint32_t addr_dst, 
 	int32_t length, 
-	uint32_t timeout 
+	uint32_t timeout,
+	uint32_t u32ScatterEn 
 );
 
+void dma_channel_terminate(int i32ChannID);
 
 void Handle_PDMA_Irq(void);
 

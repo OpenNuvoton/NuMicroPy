@@ -59,7 +59,7 @@
 #endif
 
 #define TCPIP_THREAD_STACKSIZE          350
-#define TCPIP_THREAD_PRIO               2
+#define TCPIP_THREAD_PRIO               (configMAX_PRIORITIES - 1)
 #define TCPIP_MBOX_SIZE                 10
 #define DEFAULT_TCP_RECVMBOX_SIZE       5
 #define DEFAULT_ACCEPTMBOX_SIZE         5

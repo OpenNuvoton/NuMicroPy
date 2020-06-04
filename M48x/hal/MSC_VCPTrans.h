@@ -114,6 +114,8 @@ static __INLINE uint32_t get_be32(uint8_t *buf)
 
 int32_t VCPTrans_BulkInHandler();
 
+#if 0
+
 int32_t VCPTrans_StartBulkIn(
 	uint8_t *pu8DataBuf,
 	uint32_t u32DataBufLen
@@ -123,7 +125,21 @@ int32_t VCPTrans_BulkInSendedLen();
 
 int32_t VCPTrans_BulkInCanSend();
 
+int32_t VCPTrans_BulkInTransDone();
+
 void VCPTrans_StopBulkIn();
+
+#else
+
+int32_t VCPTrans_BulkInSend(
+	uint8_t *pu8DataBuf,
+	uint32_t u32DataBufLen
+);
+
+int32_t VCPTrans_BulkInCanSend();
+
+#endif
+
 
 int32_t VCPTrans_BulkOutHandler(
 	uint8_t *pu8EPBuf, 

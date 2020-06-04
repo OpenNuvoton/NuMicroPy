@@ -33,7 +33,7 @@
 #include "extmod/machine_i2c.h"
 #include "extmod/machine_spi.h"
 
-
+#include "mods/machAUDIO.h"
 
 STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),            MP_ROM_QSTR(MP_QSTR_umachine) },
@@ -48,6 +48,11 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 #if MICROPY_PY_MACHINE_SPI
     { MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&mp_machine_soft_spi_type) },
 #endif
+
+#if MICROPY_PY_MACHINE_AUDIO
+    { MP_ROM_QSTR(MP_QSTR_AUDIO), MP_ROM_PTR(&mach_audio_type) },
+#endif
+
 };
 
 

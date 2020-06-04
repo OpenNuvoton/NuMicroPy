@@ -127,21 +127,30 @@ static uint16_t gCtrlSignal = 0;     /* BIT0: DTR(Data Terminal Ready) , BIT1: R
 static uint32_t volatile g_u32VCPOutToggle = 0;
 
 static int32_t volatile g_i32MSCConnectCheck = 0;
+static int32_t volatile g_i32MSCMaxLun;
 
 /*-------------------------------------------------------------------------------*/
 /* Functions for VCP*/
 
+#if 0
+
 static volatile uint8_t *s_pu8VCPSendBuf = NULL;
 static volatile uint32_t s_u32VCPSendBufLen = 0;
 static volatile uint32_t s_u32VCPSendBufPos = 0;
+static volatile int32_t s_b32VCPSendTrans = 0;
 
 int32_t VCPTrans_BulkInHandler()
 {
 	int32_t i32Len;
 	uint8_t *pu8EPBufAddr;
 	
-	if(s_pu8VCPSendBuf == NULL)
+	if(s_pu8VCPSendBuf == NULL){
+		if(s_b32VCPSendTrans == 1){
+			printf("VCPTrans_BulkInHandler 0 \n");
+			s_b32VCPSendTrans = 0;
+		}
 		return 0;
+	}
 		
 	i32Len = s_u32VCPSendBufLen - s_u32VCPSendBufPos;
 	
@@ -149,9 +158,14 @@ int32_t VCPTrans_BulkInHandler()
 		i32Len = EP2_VCP_MAX_PKT_SIZE;
 	
 	if(i32Len == 0){
+		if(s_b32VCPSendTrans == 1){
+			s_b32VCPSendTrans = 0;
+		}
+		printf("VCPTrans_BulkInHandler 1 \n");
 		return 0;
 	}
 
+	s_b32VCPSendTrans = 1;
 	pu8EPBufAddr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP2));
 	USBD_MemCopy(pu8EPBufAddr, (void *)s_pu8VCPSendBuf + s_u32VCPSendBufPos, i32Len);
 	USBD_SET_PAYLOAD_LEN(EP2, i32Len);
@@ -169,6 +183,7 @@ int32_t VCPTrans_StartBulkIn(
 	s_pu8VCPSendBuf = pu8DataBuf;
 	s_u32VCPSendBufLen = u32DataBufLen;
 	s_u32VCPSendBufPos = 0;
+	s_b32VCPSendTrans = 0;
 
 	return VCPTrans_BulkInHandler();
 }
@@ -178,9 +193,15 @@ int32_t VCPTrans_BulkInSendedLen()
 	return s_u32VCPSendBufPos;
 }
 
+int32_t VCPTrans_BulkInTransDone()
+{
+	return !s_b32VCPSendTrans;
+}
+
+
 int32_t VCPTrans_BulkInCanSend()
 {
-	if(s_pu8VCPSendBuf != NULL)
+	if((s_pu8VCPSendBuf != NULL) || (s_b32VCPSendTrans != 0))
 		return 0;
 	return 1;
 }
@@ -192,6 +213,94 @@ void VCPTrans_StopBulkIn()
 	s_u32VCPSendBufPos = 0;
 
 }
+
+#else
+
+#define MAX_VCP_SEND_BUF_LEN	1024
+static uint8_t s_au8VCPSendBuf[MAX_VCP_SEND_BUF_LEN];
+static volatile uint32_t s_u32VCPSendBufIn = 0;
+static volatile uint32_t s_u32VCPSendBufOut = 0;
+static volatile int32_t s_b32VCPSendTrans = 0;
+
+
+int32_t VCPTrans_BulkInHandler()
+{
+	int32_t i32Len;
+	uint8_t *pu8EPBufAddr;
+	
+	if((s_b32VCPSendTrans) && (s_u32VCPSendBufIn == s_u32VCPSendBufOut)){
+		s_b32VCPSendTrans = 0;
+		return 0;
+	}
+
+	if(s_u32VCPSendBufOut > s_u32VCPSendBufIn){
+		s_u32VCPSendBufOut = s_u32VCPSendBufIn;
+		s_b32VCPSendTrans = 0;
+		return 0;
+	}
+
+	i32Len = s_u32VCPSendBufIn - s_u32VCPSendBufOut;
+	
+	if(i32Len > EP2_VCP_MAX_PKT_SIZE)
+		i32Len = EP2_VCP_MAX_PKT_SIZE;
+
+	if(i32Len == 0){
+		s_b32VCPSendTrans = 0;
+		return 0;
+	}
+
+	s_b32VCPSendTrans = 1;
+	pu8EPBufAddr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP2));
+	USBD_MemCopy(pu8EPBufAddr, (void *)s_au8VCPSendBuf + s_u32VCPSendBufOut, i32Len);
+	USBD_SET_PAYLOAD_LEN(EP2, i32Len);
+
+	s_u32VCPSendBufOut += i32Len;
+	
+	return i32Len;
+}
+
+
+int32_t VCPTrans_BulkInSend(
+	uint8_t *pu8DataBuf,
+	uint32_t u32DataBufLen
+)
+{
+	uint32_t u32MaxLen;
+	
+	u32MaxLen = u32DataBufLen;
+	
+	if(s_b32VCPSendTrans == 0){
+		s_u32VCPSendBufIn = 0;
+		s_u32VCPSendBufOut = 0;
+		
+		if(u32MaxLen > MAX_VCP_SEND_BUF_LEN)
+			u32MaxLen = MAX_VCP_SEND_BUF_LEN;
+	}
+	else{
+		if(u32MaxLen > (MAX_VCP_SEND_BUF_LEN - s_u32VCPSendBufIn))
+			u32MaxLen = MAX_VCP_SEND_BUF_LEN - s_u32VCPSendBufIn;
+	}
+
+	memcpy(s_au8VCPSendBuf + s_u32VCPSendBufIn, pu8DataBuf, u32MaxLen);
+	s_u32VCPSendBufIn += u32MaxLen;
+
+	if(s_b32VCPSendTrans == 0){
+		VCPTrans_BulkInHandler();
+	}
+
+	return u32MaxLen;
+}
+
+int32_t VCPTrans_BulkInCanSend()
+{
+	if(s_u32VCPSendBufIn < MAX_VCP_SEND_BUF_LEN)
+		return 1;
+	return !s_b32VCPSendTrans;
+}
+
+
+#endif
+
 
 #define MAX_VCP_RECV_BUF_LEN (EP3_VCP_MAX_PKT_SIZE * 3)
 static uint8_t s_au8VCPRecvBuf[MAX_VCP_RECV_BUF_LEN];
@@ -957,7 +1066,8 @@ void MSCVCPTrans_ClassRequest(void)
 			}				
 #endif
 			
-			g_i32MSCConnectCheck = u8MaxLUN * 3;
+			g_i32MSCMaxLun = u8MaxLUN;
+			g_i32MSCConnectCheck = g_i32MSCMaxLun * 3;
 			
             /* Check interface number with cfg descriptor wIndex = interface number, check wValue = 0, wLength = 1 */
             if ((((buf[3]<<8)+buf[2]) == 0) && (((buf[5]<<8)+buf[4]) == 2) && (((buf[7]<<8)+buf[6]) == 1))
@@ -1087,8 +1197,6 @@ void MSCTrans_ProcessCmd(void)
             /* Prepare to echo the tag from CBW to CSW */
             g_sCSW.dCSWTag = g_sCBW.dCBWTag;
             Hcount = g_sCBW.dCBWDataTransferLength;
-
-			//printf("MSCTrans_ProcessCmd u8OPCode %x, bCBWLUN %d \n", g_sCBW.u8OPCode, g_sCBW.bCBWLUN);
 
             /* Parse Op-Code of CBW */
             switch (g_sCBW.u8OPCode)
@@ -1321,6 +1429,8 @@ void MSCTrans_ProcessCmd(void)
             case UFI_READ_12:
             case UFI_READ_10:
             {
+				g_i32MSCConnectCheck = g_i32MSCMaxLun * 3;
+
                 /* Check if it is a new transfer */
                 if(g_u32Length == 0)
                 {

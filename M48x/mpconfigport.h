@@ -183,10 +183,6 @@ extern const struct _mp_obj_module_t mp_module_TouchADC;
 
 #if MICROPY_LVGL
 #include "lvgl/src/lv_misc/lv_gc.h"
-// TODO: [MUST] by chchen59
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_lvindev), (mp_obj_t)&mp_module_lvindev},
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_SDL), (mp_obj_t)&mp_module_SDL },
-//    { MP_OBJ_NEW_QSTR(MP_QSTR_lodepng), (mp_obj_t)&mp_module_lodepng },
 
 #define MICROPY_PY_LVGL_DEF \
     { MP_OBJ_NEW_QSTR(MP_QSTR_lvgl), (mp_obj_t)&mp_module_lvgl }, \

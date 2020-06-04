@@ -379,7 +379,7 @@ int32_t UART_DMA_RX_Start(
                                 (uint32_t)&(psObj->uart)->DAT,
                                 (uint32_t)pu8DestBuf,
                                 i32TriggerLen, //half buffer
-                                5000);
+                                5000, 0);
     //(1000000*40)/115200 );
 
     UART_ENABLE_INT(psObj->uart, UART_INTEN_RXPDMAEN_Msk); // Start DMA transfe
@@ -423,7 +423,7 @@ int32_t UART_DMA_TX_Start(
                                 (uint32_t)pu8SrcBuf,
                                 (uint32_t)&(psObj->uart)->DAT,
                                 i32TriggerLen,
-                                0 );
+                                0, 0);
 
     UART_ENABLE_INT(psObj->uart, UART_INTEN_TXPDMAEN_Msk); // Start DMA transfe
 	return 0;

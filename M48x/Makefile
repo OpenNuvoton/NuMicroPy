@@ -79,6 +79,7 @@ INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/FreeRTOS
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/FreeRTOS/Source/include
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/FreeRTOS/Source/portable/GCC/ARM_CM4F
+INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/LibMAD/inc
 
 ifeq ($(CROSS), 1)
 CFLAGS_CORTEX_M4 = -mthumb -mtune=cortex-m4 -mabi=aapcs -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -fsingle-precision-constant -Wdouble-promotion
@@ -160,6 +161,7 @@ SRC_MODS_C = $(addprefix mods/,\
 	pybaccel.c \
 	modILI9341.c \
 	modTouchADC.c \
+	machAUDIO.c \
 	)
 
 SRC_O = \
@@ -193,6 +195,23 @@ SRC_BSP_DRIVER_C = $(addprefix $(M48XBSP_LIB)/StdDriver/src/,\
 	spim.c \
 	ebi.c \
 	qspi.c \
+	i2s.c \
+	)
+
+
+SRC_LIBMAD_C = $(addprefix $(M48XBSP_THIRD_PARTY)/LibMAD/src/,\
+	bit.c \
+	fixed.c \
+	huffman.c \
+	layer3.c \
+	stream.c \
+	timer.c \
+	decoder.c \
+	frame.c \
+	layer12.c \
+	MP3Func.c \
+	synth.c \
+	version.c \
 	)
 
 ifeq ($(MICROPY_PY_THREAD),1)
@@ -388,10 +407,9 @@ SRC_HAL_C = $(addprefix hal/,\
 	StorIF_Flash.c \
 	M48x_UART.c \
 	StorIF_SPIFlash.c \
+	M48x_I2S.c \
+	NAU88L25.c \
 	)
-
-#	MSC_Desc.c
-#	MSC_Trans.c
 
 
 ifeq ($(MICROPY_LVGL),1)
@@ -488,6 +506,8 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_MODS_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_SYS_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_DRIVER_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_BSP_DRIVER_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_LIBMAD_C:.c=.o))
+
 ifeq ($(MICROPY_PY_THREAD),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_RTOS_C:.c=.o))
 endif
