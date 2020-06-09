@@ -68,6 +68,7 @@ CROSS_COMPILE = arm-none-eabi-
 endif
 
 INC += -I.
+INC += -I./lib
 INC += -I$(TOP)
 INC += -I$(BUILD)
 INC += -I$(BUILD)/genhdr
@@ -344,6 +345,18 @@ SRC_ESP8266_C = $(addprefix lib/ESP_AT_Lib/src/,\
 	
 endif
 
+SRC_SHINE_C = $(addprefix lib/shine/src/,\
+	lib/bitstream.c \
+	lib/huffman.c \
+	lib/l3bitstream.c \
+	lib/l3loop.c \
+	lib/l3mdct.c \
+	lib/l3subband.c \
+	lib/layer3.c \
+	lib/reservoir.c \
+	lib/tables.c \
+	)
+
 
 ifeq ($(MICROPY_NVT_LWIP),1)
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/lwIP/src/include -Ilwip-port/include
@@ -507,6 +520,7 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_SYS_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_DRIVER_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_BSP_DRIVER_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIBMAD_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_SHINE_C:.c=.o))
 
 ifeq ($(MICROPY_PY_THREAD),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_RTOS_C:.c=.o))

@@ -196,7 +196,6 @@ int dma_channel_allocate(uint32_t capabilities)
     }
 
     int i = nu_cto(dma_chn_mask);
-	i =2;
     if (i != 32) {
         dma_chn_mask |= 1 << i;
         memset(dma_chn_arr + i - NU_PDMA_CH_Pos, 0x00, sizeof (struct nu_dma_chn_s));

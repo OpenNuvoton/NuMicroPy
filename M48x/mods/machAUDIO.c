@@ -57,6 +57,10 @@
 //libMAD includes
 #include "mad.h"
 
+//shine includes
+#include "shine/src/lib/layer3.h"
+
+
 #if MICROPY_PY_MACHINE_AUDIO
 
 #define PCM_BUFFER_SIZE        2304		//MP3 sample per block size is 384, 576, 1152
@@ -753,6 +757,102 @@ play_stop:
 }
 
 
+
+STATIC void mp3_rec_task(void *pvParameter) {
+	
+	mach_audio_obj_t *self = (mach_audio_obj_t *)pvParameter;
+
+	shine_config_t sShineConfig;
+	shine_t psShine = NULL;
+	
+	uint32_t u32SamplePerBlock;
+
+	shine_set_config_mpeg_defaults(&sShineConfig.mpeg);
+	sShineConfig.mpeg.bitr = self->audioInfo.BitRate / 1000;
+
+	if(self->audioInfo.Channel > 1){
+		sShineConfig.wave.channels = PCM_STEREO;	
+		sShineConfig.mpeg.mode = STEREO;
+	}
+	else{
+		sShineConfig.wave.channels = PCM_MONO;	
+		sShineConfig.mpeg.mode = MONO;
+	}
+
+	sShineConfig.wave.samplerate = self->audioInfo.SampleRate;
+
+	//open shine mp3 encoder
+	psShine = shine_initialise(&sShineConfig);
+	if(psShine == NULL)
+		goto record_stop;
+
+	u32SamplePerBlock = shine_samples_per_pass(psShine);
+
+	//setup audio codec
+	//Open I2S0 interface and set to slave mode, I2S format 
+	I2S_InitTypeDef I2SInit;
+	
+	I2SInit.Mode = I2S_MODE_SLAVE;
+	I2SInit.SampleRate = self->audioInfo.SampleRate;
+	I2SInit.WordWidth = I2S_DATABIT_16;
+	I2SInit.DataFormat = I2S_FORMAT_I2S;
+
+	if(self->audioInfo.Channel == 1)
+		I2SInit.MonoData = I2S_ENABLE_MONO;
+	else
+		I2SInit.MonoData = I2S_DISABLE_MONO;
+
+	
+	if(I2S_Init(&self->i2sObj, &I2SInit) != 0){
+		goto record_stop;
+	}
+
+	NAU88L25_MixerCtrl(self->i2c_base, NAUL8825_MIXER_MUTE, 0);
+
+    /* Configure NAU88L25 to specific sample rate */
+    NAU88L25_DSPConfig(self->i2c_base, self->audioInfo.SampleRate, self->audioInfo.Channel, 32);
+
+	//Open record file
+    FIL mp3_fp;
+
+    /* Open MP3 file */
+    f_open(self->fs, &mp3_fp, self->szFile, FA_OPEN_EXISTING | FA_WRITE);
+
+
+	//Start PDMA
+		
+	self->eStatus = eAUDIO_STATUS_RECORDING;
+	while(self->eStatus == eAUDIO_STATUS_RECORDING){
+
+
+
+	}
+
+	//Stop PDMA
+	
+
+	//Close record file
+	
+	
+	//Close PDAM transdf
+
+	/* Flush and write remaining data. */
+	int i32DataLen;
+	shine_flush(psShine, &i32DataLen);
+
+
+record_stop:
+
+	if(psShine){
+		/* Close encoder. */
+		shine_close(psShine);
+	}
+
+	self->eStatus = eAUDIO_STATUS_STOP;
+	vTaskDelete(NULL);
+
+}
+
 STATIC FATFS *lookup_path(const char **path) {
     mp_vfs_mount_t *fs = mp_vfs_lookup_path(*path, path);
     if (fs == MP_VFS_NONE || fs == MP_VFS_ROOT) {
@@ -894,10 +994,99 @@ STATIC mp_obj_t mach_audio_mp3_status(mp_obj_t self_in) {
 
 MP_DEFINE_CONST_FUN_OBJ_1(mach_audio_mp3_status_obj, mach_audio_mp3_status);
 
+#define DEF_REC_FILE_NAME "/sd/nvt001.mp3"
+
+STATIC mp_obj_t mach_audio_mp3_rec(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_file, ARG_samplerate, ARG_channel, ARG_bitrate};
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_file, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_samplerate, MP_ARG_INT, {.u_int = 16000} },
+        { MP_QSTR_channel, MP_ARG_INT, {.u_int = 2} },
+        { MP_QSTR_bitrate, MP_ARG_INT, {.u_int = 128000} },
+    };
+
+    mach_audio_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+    
+	mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+	mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+	if(self->eStatus != eAUDIO_STATUS_STOP){
+		mp_printf(&mp_plat_print, "Audio is busy. Unable record");
+		return mp_const_none;
+	}
+
+	const char *szFileName;
+	printf("mach_audio_mp3_rec 0 \n");
+	
+	if(args[ARG_file].u_obj != mp_const_none){
+		szFileName = mp_obj_str_get_str(args[ARG_file].u_obj);
+	}
+	else{
+		szFileName = DEF_REC_FILE_NAME;
+	}
+
+	printf("mach_audio_mp3_rec 1 \n");
+	if(shine_check_config(args[ARG_samplerate].u_int, (args[ARG_bitrate].u_int) / 1000)< 0){
+		mp_printf(&mp_plat_print, "sample rate and bit rate is not supported");
+		return mp_const_none;
+	}
+
+	printf("mach_audio_mp3_rec 2 \n");
+	//copy file name
+	self->szFile = strdup(szFileName);
+
+	if(self->szFile == NULL){
+		mp_printf(&mp_plat_print, "strdup failed");
+		return mp_const_none;
+	}
+
+	//look up file system
+	self->fs = lookup_path(&szFileName);
+	
+    if (self->fs == NULL) {
+		mp_printf(&mp_plat_print, "file system not found");
+		return mp_const_none;
+    }
+
+
+	//allocate PCM buffer
+	self->pi32PCMBuff = malloc(2 * PCM_BUFFER_SIZE * sizeof(signed int));
+
+	if(self->pi32PCMBuff == NULL){
+		free(self->szFile);
+		mp_printf(&mp_plat_print, "allocate PCM buffer failed");
+		return mp_const_none;
+	}
+
+	//Create MP3 record thread 
+	TaskHandle_t MP3RecTaskHandle;
+
+    MP3RecTaskHandle = xTaskCreateStatic(mp3_rec_task, "MP3_rec",
+        MP3_TASK_STACK_LEN, self, MP3_TASK_PRIORITY, mp3task_stack, &mp3task_tcb);
+
+    if (MP3RecTaskHandle == NULL){
+		free(self->szFile);
+		free(self->pi32PCMBuff);
+		mp_printf(&mp_plat_print, "unable crate mp3 record thread");
+		return mp_const_none;
+	}
+
+	self->audioInfo.SampleRate = args[ARG_samplerate].u_int;
+	self->audioInfo.Channel = args[ARG_channel].u_int;	
+	self->audioInfo.BitRate = args[ARG_bitrate].u_int;	
+	self->eStatus = eAUDIO_STATUS_TO_RECORD;
+
+	return mp_obj_new_str(self->szFile, strlen(self->szFile));
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mach_audio_mp3_rec_obj, 1, mach_audio_mp3_rec);
+
+
 STATIC const mp_rom_map_elem_t mach_audio_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_mp3_play), MP_ROM_PTR(&mach_audio_mp3_play_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mp3_stop), MP_ROM_PTR(&mach_audio_mp3_stop_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mp3_status), MP_ROM_PTR(&mach_audio_mp3_status_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_mp3_record), MP_ROM_PTR(&mach_audio_mp3_rec_obj) },
 
 	// constants for AUDIO status
     { MP_ROM_QSTR(MP_QSTR_STATUS_STOP), MP_ROM_INT(eAUDIO_STATUS_STOP) },
