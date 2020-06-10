@@ -373,6 +373,7 @@ static void ExecuteUsbMSC(void){
 		while(USBD_IS_ATTACHED())
 		{
 			MSCTrans_ProcessCmd();
+//			vTaskDelay(1);
 		}
 	}
 	else{

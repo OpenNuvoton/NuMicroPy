@@ -120,13 +120,18 @@ typedef struct{
 	i2s_t i2sObj;
 	FATFS *fs;
 
-//for MP3 playback
 	char *szFile;
 	signed int *pi32PCMBuff;
-	unsigned char *pu8MADInputBuff;
 	struct AudioInfoObject audioInfo;
 	uint8_t au8PCMBuffer_Full[2];
-	uint8_t u8PCMBuffer_Playing;
+
+//for MP3 playback
+	unsigned char *pu8MADInputBuff;
+	uint8_t u8PCMBufferPlayIdx;
+
+//for MP3 record
+	uint8_t u8PCMBufferRecIdx;
+	uint32_t u32StorFreeSizeKB;
 
 }mach_audio_obj_t;
 
@@ -473,7 +478,7 @@ STATIC void MP3_ParseHeaderInfo(
 	}
 }
 
-STATIC void I2S_PDMA_IRQ(
+STATIC void I2S_TX_PDMA_IRQ(
 	void *psObj
 )
 {
@@ -481,10 +486,10 @@ STATIC void I2S_PDMA_IRQ(
 	mach_audio_obj_t *self = (mach_audio_obj_t *)pI2SObj->pvPriv;
 
 	if(pI2SObj->event == I2S_EVENT_DMA_TX_DONE){
-		if(self->au8PCMBuffer_Full[self->u8PCMBuffer_Playing ^ 1] != 1)
+		if(self->au8PCMBuffer_Full[self->u8PCMBufferPlayIdx ^ 1] != 1)
 			printf("underflow!!\n");
-		self->au8PCMBuffer_Full[self->u8PCMBuffer_Playing] = 0;       //set empty flag
-		self->u8PCMBuffer_Playing ^= 1;
+		self->au8PCMBuffer_Full[self->u8PCMBufferPlayIdx] = 0;       //set empty flag
+		self->u8PCMBufferPlayIdx ^= 1;
 	}
 }
 
@@ -496,9 +501,6 @@ typedef struct dma_desc_t
     uint32_t offset;
 } DMA_DESC_T;
 
-
-BYTE Buff[16] __attribute__((aligned(32)));       /* Working buffer */
-DMA_DESC_T DMA_DESC[2] __attribute__((aligned(32)));
 
 STATIC void StartTxPDMATrans(
 	mach_audio_obj_t *self
@@ -517,7 +519,7 @@ STATIC void StartTxPDMATrans(
 	sTransParam.rx1_length = 0;
 	self->i2sObj.pvPriv = self;
 	
-	I2S_StartTransfer(&self->i2sObj, &sTransParam, I2S_PDMA_IRQ, I2S_EVENT_ALL, DMA_USAGE_ALWAYS);
+	I2S_StartTransfer(&self->i2sObj, &sTransParam, I2S_TX_PDMA_IRQ, I2S_EVENT_ALL, DMA_USAGE_ALWAYS);
 }
 
 STATIC void StopTxPDMATrans(
@@ -544,7 +546,7 @@ STATIC void mp3_play_task(void *pvParameter) {
     volatile unsigned int Mp3FileOffset=0;
     volatile uint8_t u8PCMBufferTargetIdx = 0;
 
-	bool bStartPDMATransdf = FALSE;
+	bool bStartPDMATransfer = FALSE;
     uint16_t sampleL, sampleR;
     volatile uint32_t pcmbuf_idx;
 	int i;
@@ -552,7 +554,7 @@ STATIC void mp3_play_task(void *pvParameter) {
 	pcmbuf_idx = 0;
 	self->au8PCMBuffer_Full[0] = 0;
 	self->au8PCMBuffer_Full[1] = 0;
-	self->u8PCMBuffer_Playing = 0;
+	self->u8PCMBufferPlayIdx = 0;
 	
 	/* Parse MP3 header */
 	MP3_ParseHeaderInfo(self, self->szFile);
@@ -683,7 +685,7 @@ STATIC void mp3_play_task(void *pvParameter) {
 		// decode finished, try to copy pcm data to audio buffer
 		//
 
-		if(bStartPDMATransdf == TRUE){
+		if(bStartPDMATransfer == TRUE){
 			//if next buffer is still full (playing), wait until it's empty
             if(self->au8PCMBuffer_Full[u8PCMBufferTargetIdx] == 1){
 //				printf("Wait PDMA trans done Idx is %d, %d \n", u8PCMBufferTargetIdx, self->u8PCMBuffer_Playing);
@@ -697,7 +699,7 @@ STATIC void mp3_play_task(void *pvParameter) {
             if((self->au8PCMBuffer_Full[0] == 1) && (self->au8PCMBuffer_Full[1] == 1 ))         //all buffers are full, wait
             {
                 StartTxPDMATrans(self);
-				bStartPDMATransdf = TRUE;
+				bStartPDMATransfer = TRUE;
             }
 		}
 
@@ -723,7 +725,7 @@ STATIC void mp3_play_task(void *pvParameter) {
                 pcmbuf_idx = 0;
                 //printf("change to ==>%d ..\n", u8PCMBufferTargetIdx);
                 /* if next buffer is still full (playing), wait until it's empty */
-                if((self->au8PCMBuffer_Full[u8PCMBufferTargetIdx] == 1) && (bStartPDMATransdf)){
+                if((self->au8PCMBuffer_Full[u8PCMBufferTargetIdx] == 1) && (bStartPDMATransfer)){
 //					printf("Wait PDMA trans done ---1\n");
                     while(self->au8PCMBuffer_Full[u8PCMBufferTargetIdx]){
 //						vTaskDelay(1);
@@ -756,6 +758,51 @@ play_stop:
 	vTaskDelete(NULL);
 }
 
+#define DEF_RESERVED_STOR_SPACE_KB	10 
+
+
+STATIC void I2S_RX_PDMA_IRQ(
+	void *psObj
+)
+{
+	i2s_t *pI2SObj = (i2s_t *)psObj;
+	mach_audio_obj_t *self = (mach_audio_obj_t *)pI2SObj->pvPriv;
+
+	if(pI2SObj->event == I2S_EVENT_DMA_RX_DONE){
+		if(self->au8PCMBuffer_Full[self->u8PCMBufferRecIdx ^ 1] != 0)
+			printf("overflow!!\n");
+		self->au8PCMBuffer_Full[self->u8PCMBufferRecIdx] = 1;       //set full flag
+		self->u8PCMBufferRecIdx ^= 1;
+	}
+}
+
+STATIC void StartRxPDMATrans(
+	mach_audio_obj_t *self
+)
+{
+	I2S_TransParam sTransParam;
+
+	sTransParam.rx = self->pi32PCMBuff;
+	sTransParam.rx_length = PCM_BUFFER_SIZE;
+	sTransParam.rx1 = (self->pi32PCMBuff + (PCM_BUFFER_SIZE));
+	sTransParam.rx1_length = PCM_BUFFER_SIZE;
+	
+	sTransParam.tx = NULL;
+	sTransParam.tx_length = 0;
+	sTransParam.tx1 = NULL;
+	sTransParam.tx1_length = 0;
+	self->i2sObj.pvPriv = self;
+	
+	I2S_StartTransfer(&self->i2sObj, &sTransParam, I2S_RX_PDMA_IRQ, I2S_EVENT_ALL, DMA_USAGE_ALWAYS);
+}
+
+STATIC void StopRxPDMATrans(
+	mach_audio_obj_t *self
+)
+{
+	I2S_StopTransfer(&self->i2sObj);
+}
+
 
 
 STATIC void mp3_rec_task(void *pvParameter) {
@@ -766,7 +813,21 @@ STATIC void mp3_rec_task(void *pvParameter) {
 	shine_t psShine = NULL;
 	
 	uint32_t u32SamplePerBlock;
+	volatile uint8_t u8PCMBuffEncIdx = 0;
+	volatile uint32_t pcmbuf_idx;
+	uint8_t *pu8EncodedData;
+	int16_t *pi6PCMBufAdr;
+	int i32EncodedLen;
+	UINT i32FileWriteLen;
+	uint32_t u32TotalFileWriteB;
 
+	u32TotalFileWriteB = 0;
+	self->au8PCMBuffer_Full[0] = 0;
+	self->au8PCMBuffer_Full[1] = 0;
+	self->u8PCMBufferRecIdx = 0;
+	pcmbuf_idx = 0;
+	
+	
 	shine_set_config_mpeg_defaults(&sShineConfig.mpeg);
 	sShineConfig.mpeg.bitr = self->audioInfo.BitRate / 1000;
 
@@ -787,6 +848,14 @@ STATIC void mp3_rec_task(void *pvParameter) {
 		goto record_stop;
 
 	u32SamplePerBlock = shine_samples_per_pass(psShine);
+
+	if(self->audioInfo.Channel == 1){
+		u32SamplePerBlock /= 2;
+	}
+
+	if(PCM_BUFFER_SIZE % u32SamplePerBlock){
+		printf("PCM_BUFFER_SIZE is not multiple of %ld \n", u32SamplePerBlock);
+	}
 
 	//setup audio codec
 	//Open I2S0 interface and set to slave mode, I2S format 
@@ -814,27 +883,72 @@ STATIC void mp3_rec_task(void *pvParameter) {
 
 	//Open record file
     FIL mp3_fp;
+	FRESULT res;
 
     /* Open MP3 file */
-    f_open(self->fs, &mp3_fp, self->szFile, FA_OPEN_EXISTING | FA_WRITE);
-
+	res = f_open(self->fs, &mp3_fp, self->szFile, FA_CREATE_ALWAYS | FA_WRITE);
+	if(res != FR_OK){
+		goto record_stop;
+	}
 
 	//Start PDMA
+	StartRxPDMATrans(self);
 		
 	self->eStatus = eAUDIO_STATUS_RECORDING;
+	
+	
 	while(self->eStatus == eAUDIO_STATUS_RECORDING){
 
-
-
+		if(self->au8PCMBuffer_Full[u8PCMBuffEncIdx] == 0){
+			//Wait PCM data ready
+			while(self->au8PCMBuffer_Full[u8PCMBuffEncIdx] == 0){
+//				vTaskDelay(1);
+			}
+		}
+		
+		//Encode and fwrite
+		if((PCM_BUFFER_SIZE - pcmbuf_idx) > u32SamplePerBlock){
+			pi6PCMBufAdr = (int16_t *)(self->pi32PCMBuff + (u8PCMBuffEncIdx * PCM_BUFFER_SIZE) + pcmbuf_idx);
+			pu8EncodedData = shine_encode_buffer_interleaved(psShine, pi6PCMBufAdr, &i32EncodedLen);
+		
+			//Write file
+			if(pu8EncodedData){
+				res = f_write(&mp3_fp, pu8EncodedData, i32EncodedLen, &i32FileWriteLen);
+				if(res != FR_OK)
+				{
+					printf("MP3 file write stop! (%x)\n", res);
+					break;
+				}
+				u32TotalFileWriteB += i32FileWriteLen;
+			}
+			
+			if((self->u32StorFreeSizeKB - (u32TotalFileWriteB / 1024)) <= DEF_RESERVED_STOR_SPACE_KB){
+				printf("MP3 file write stop! Storage free space not enough\n");
+				break;
+			}
+			
+			//Update index
+			pcmbuf_idx += u32SamplePerBlock;
+		}
+		else {
+			//Wait next buffer
+			printf("Discard some audio data. Because PCM_BUFFER_SIZE is not multiple of samples per block \n");
+			pcmbuf_idx = PCM_BUFFER_SIZE;
+		}
+		
+		if(pcmbuf_idx >= PCM_BUFFER_SIZE){
+			self->au8PCMBuffer_Full[u8PCMBuffEncIdx] = 0;
+			u8PCMBuffEncIdx ^= 1;			
+			pcmbuf_idx -= PCM_BUFFER_SIZE;
+		}
+	
 	}
 
 	//Stop PDMA
-	
+	StopRxPDMATrans(self);
 
 	//Close record file
-	
-	
-	//Close PDAM transdf
+	f_close(&mp3_fp);
 
 	/* Flush and write remaining data. */
 	int i32DataLen;
@@ -843,10 +957,18 @@ STATIC void mp3_rec_task(void *pvParameter) {
 
 record_stop:
 
+	I2S_Final(&self->i2sObj);
+
+	//Mute and phonejack disable
+	NAU88L25_MixerCtrl(self->i2c_base, NAUL8825_MIXER_MUTE, 1);
+	
 	if(psShine){
 		/* Close encoder. */
 		shine_close(psShine);
 	}
+
+	free(self->szFile);
+	free(self->pi32PCMBuff);
 
 	self->eStatus = eAUDIO_STATUS_STOP;
 	vTaskDelete(NULL);
@@ -944,8 +1066,7 @@ STATIC mp_obj_t mach_audio_mp3_play(mp_obj_t self_in, mp_obj_t file_name) {
 		mp_printf(&mp_plat_print, "allocate file IO buffer failed");
 		return mp_obj_new_bool(bPlayed);
 	}
-
-	
+		
 	//Create MP3 play thread 
 	TaskHandle_t MP3PlayTaskHandle;
 
@@ -1016,7 +1137,6 @@ STATIC mp_obj_t mach_audio_mp3_rec(size_t n_args, const mp_obj_t *pos_args, mp_m
 	}
 
 	const char *szFileName;
-	printf("mach_audio_mp3_rec 0 \n");
 	
 	if(args[ARG_file].u_obj != mp_const_none){
 		szFileName = mp_obj_str_get_str(args[ARG_file].u_obj);
@@ -1025,13 +1145,11 @@ STATIC mp_obj_t mach_audio_mp3_rec(size_t n_args, const mp_obj_t *pos_args, mp_m
 		szFileName = DEF_REC_FILE_NAME;
 	}
 
-	printf("mach_audio_mp3_rec 1 \n");
 	if(shine_check_config(args[ARG_samplerate].u_int, (args[ARG_bitrate].u_int) / 1000)< 0){
 		mp_printf(&mp_plat_print, "sample rate and bit rate is not supported");
 		return mp_const_none;
 	}
 
-	printf("mach_audio_mp3_rec 2 \n");
 	//copy file name
 	self->szFile = strdup(szFileName);
 
@@ -1048,6 +1166,15 @@ STATIC mp_obj_t mach_audio_mp3_rec(size_t n_args, const mp_obj_t *pos_args, mp_m
 		return mp_const_none;
     }
 
+	//Get free storage size;
+	f_getfree(self->fs, &self->u32StorFreeSizeKB);
+	self->u32StorFreeSizeKB = (self->u32StorFreeSizeKB * self->fs->csize) / (1024 / 512);
+	printf("Free stoage space %d(KB) \n", self->u32StorFreeSizeKB);
+
+	if(self->u32StorFreeSizeKB <= DEF_RESERVED_STOR_SPACE_KB){
+		mp_printf(&mp_plat_print, "storage free space is not enough");
+		return mp_const_none;
+	}
 
 	//allocate PCM buffer
 	self->pi32PCMBuff = malloc(2 * PCM_BUFFER_SIZE * sizeof(signed int));
