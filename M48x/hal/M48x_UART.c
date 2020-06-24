@@ -3,6 +3,7 @@
  * @version  V0.01
  * @brief    M480 series SPI HAL source file
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 

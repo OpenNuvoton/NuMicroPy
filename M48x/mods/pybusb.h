@@ -37,4 +37,8 @@ extern const mp_obj_type_t pyb_usb_hid_type;
 extern const mp_obj_type_t pyb_usb_vcp_type;
 
 MP_DECLARE_CONST_FUN_OBJ_KW(pyb_usb_mode_obj);
+
+MP_DECLARE_CONST_FUN_OBJ_0(pyb_msc_enable_obj);
+MP_DECLARE_CONST_FUN_OBJ_0(pyb_msc_disable_obj);
+
 #endif //MICROPY_INCLUDED_M48X_USB_H

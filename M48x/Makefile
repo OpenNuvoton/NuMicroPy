@@ -68,7 +68,8 @@ CROSS_COMPILE = arm-none-eabi-
 endif
 
 INC += -I.
-INC += -I./lib
+INC += -I./lib/libnIMAAdpcm/inc
+INC += -I./lib/WavFileUtil
 INC += -I$(TOP)
 INC += -I$(BUILD)
 INC += -I$(BUILD)/genhdr
@@ -81,6 +82,7 @@ INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/FreeRTOS
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/FreeRTOS/Source/include
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/FreeRTOS/Source/portable/GCC/ARM_CM4F
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/LibMAD/inc
+
 
 ifeq ($(CROSS), 1)
 CFLAGS_CORTEX_M4 = -mthumb -mtune=cortex-m4 -mabi=aapcs -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -fsingle-precision-constant -Wdouble-promotion
@@ -163,6 +165,7 @@ SRC_MODS_C = $(addprefix mods/,\
 	modILI9341.c \
 	modTouchADC.c \
 	machAUDIO.c \
+	MediumQueue.c \
 	)
 
 SRC_O = \
@@ -214,6 +217,18 @@ SRC_LIBMAD_C = $(addprefix $(M48XBSP_THIRD_PARTY)/LibMAD/src/,\
 	synth.c \
 	version.c \
 	)
+
+SRC_WAV_C = $(addprefix lib/WavFileUtil/,\
+	WavFileWriter.c \
+	WavFileReader.c \
+	)
+
+SRC_IMAADPCM_C = $(addprefix lib/libnIMAAdpcm/src/,\
+	IMAAdpcmCodec.c \
+	IMAAdpcmDecoder.c \
+	IMAAdpcmEncoder.c \
+	)
+
 
 ifeq ($(MICROPY_PY_THREAD),1)
 
@@ -345,19 +360,6 @@ SRC_ESP8266_C = $(addprefix lib/ESP_AT_Lib/src/,\
 	
 endif
 
-SRC_SHINE_C = $(addprefix lib/shine/src/,\
-	lib/bitstream.c \
-	lib/huffman.c \
-	lib/l3bitstream.c \
-	lib/l3loop.c \
-	lib/l3mdct.c \
-	lib/l3subband.c \
-	lib/layer3.c \
-	lib/reservoir.c \
-	lib/tables.c \
-	)
-
-
 ifeq ($(MICROPY_NVT_LWIP),1)
 INC += -I$(TOP)/$(M48XBSP_THIRD_PARTY)/lwIP/src/include -Ilwip-port/include
 CFLAGS += -DMICROPY_NVT_LWIP=1
@@ -409,7 +411,6 @@ SRC_HAL_C = $(addprefix hal/,\
 	M48x_I2C.c \
 	nu_modutil.c \
 	M48x_SPI.c \
-	M48x_EADC.c\
 	dma.c \
 	M48x_ETH.c \
 	M48x_USBD.c \
@@ -520,7 +521,8 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_SYS_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_DRIVER_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_BSP_DRIVER_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIBMAD_C:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_SHINE_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_WAV_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_IMAADPCM_C:.c=.o))
 
 ifeq ($(MICROPY_PY_THREAD),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_RTOS_C:.c=.o))

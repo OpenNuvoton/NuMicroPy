@@ -1,7 +1,11 @@
-/*
- * Copyright (c) 2016 Nuvoton Technology Corp.
- * Description:   M480 EMAC driver header file
- */
+/**************************************************************************//**
+ * @file     M48x_ETH.h
+ * @version  V0.01
+ * @brief    M480 EMAC driver file
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
+ *****************************************************************************/
 
 #ifndef  __M48x_ETH_H__
 #define  __M48x_ETH_H__

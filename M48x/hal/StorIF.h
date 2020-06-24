@@ -3,6 +3,7 @@
  * @brief    Storage access interface
  * @version  0.0.1
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2019 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __STORIF_H__

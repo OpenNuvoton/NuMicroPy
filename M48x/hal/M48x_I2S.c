@@ -3,6 +3,7 @@
  * @version  V0.01
  * @brief    M480 series I2S HAL source file
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 
@@ -316,9 +317,9 @@ static uint32_t i2s_event_check(i2s_t *obj)
 {
     I2S_T *i2s_base = (I2S_T *) obj->i2s;
     uint32_t event = 0;
-    uint32_t u32Reg;
+    //uint32_t u32Reg;
 
-	u32Reg = I2S_GET_INT_FLAG(i2s_base, I2S_STATUS0_TXTHIF_Msk | I2S_STATUS0_RXTHIF_Msk);
+	//u32Reg = I2S_GET_INT_FLAG(i2s_base, I2S_STATUS0_TXTHIF_Msk | I2S_STATUS0_RXTHIF_Msk);
 
     if (obj->dma_usage == DMA_USAGE_NEVER) {
         i2s_read_asynch(obj, I2S_GET_RX_FIFO_LEVEL(i2s_base));
@@ -480,15 +481,15 @@ void I2S_StartTransfer(
 			return;
 
 		uint8_t data_width = i2s_get_data_width(psObj);
-		uint32_t u32DataWidth;
 		struct nu_i2s_var *var = (struct nu_i2s_var *) modinit->var;
 		
-		if(data_width ==  8)
-			u32DataWidth = PDMA_WIDTH_8;
-		else if(data_width ==  16)
-			u32DataWidth = PDMA_WIDTH_16;
-		else
-			u32DataWidth = PDMA_WIDTH_32;
+		//uint32_t u32DataWidth;
+		//if(data_width ==  8)
+		//	u32DataWidth = PDMA_WIDTH_8;
+		//else if(data_width ==  16)
+		//	u32DataWidth = PDMA_WIDTH_16;
+		//else
+		//	u32DataWidth = PDMA_WIDTH_32;
 		
         var->obj = psObj;
         psObj->hdl = handler;
@@ -506,8 +507,8 @@ void I2S_StartTransfer(
 			var->DMA_DESC_TX[1].src = (uint32_t)psTransParam->tx1;
 			var->DMA_DESC_TX[1].dest = (uint32_t)&i2s_base->TXFIFO;
 			var->DMA_DESC_TX[1].offset = (uint32_t)&var->DMA_DESC_TX[0] - (PDMA->SCATBA);
-			printf("var->DMA_DESC_TX[0].offset %x \n", var->DMA_DESC_TX[0].offset);
-			printf("var->DMA_DESC_TX[1].offset %x \n", var->DMA_DESC_TX[1].offset);
+			printf("var->DMA_DESC_TX[0].offset %lx \n", var->DMA_DESC_TX[0].offset);
+			printf("var->DMA_DESC_TX[1].offset %lx \n", var->DMA_DESC_TX[1].offset);
 
 			dma_fill_description (psObj->dma_chn_id_tx,
 									var->pdma_perp_tx,
@@ -563,7 +564,7 @@ void I2S_StopTransfer(
 )
 {
     I2S_T *i2s_base = (I2S_T *) psObj->i2s;
-    PDMA_T *pdma_base = dma_modbase();
+    //PDMA_T *pdma_base = dma_modbase();
 
 
     if (psObj->dma_usage != DMA_USAGE_NEVER) {

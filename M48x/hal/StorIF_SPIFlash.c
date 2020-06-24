@@ -3,6 +3,7 @@
  * @brief    SPI flash storage access function
  * @version  0.0.1
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 

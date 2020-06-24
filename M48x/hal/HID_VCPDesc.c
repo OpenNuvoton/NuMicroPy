@@ -3,6 +3,7 @@
  * @brief    M480 series USB class descriptions code for VCP and HID
  * @version  0.0.1
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 /*!<Includes */

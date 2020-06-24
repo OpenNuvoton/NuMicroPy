@@ -3,7 +3,8 @@
  * @version  V1.00
  * @brief    M480 SPI HAL header file for micropython
  *
- * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
+  * SPDX-License-Identifier: Apache-2.0
+* @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __M48X_SPI_H__
 #define __M48X_SPI_H__

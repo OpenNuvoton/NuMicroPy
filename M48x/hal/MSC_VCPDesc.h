@@ -3,6 +3,7 @@
  * @brief    M480 series USB class descriptions code for mass storage and VCP
  * @version  0.0.1
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #ifndef __MSC_VCPDESC_H__

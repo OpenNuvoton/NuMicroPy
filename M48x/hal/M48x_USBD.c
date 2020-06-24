@@ -3,6 +3,7 @@
  * @version  V0.01
  * @brief    M480 series USB HAL source file
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 
@@ -134,6 +135,16 @@ E_USBDEV_MODE USBDEV_GetMode(
 	if(psUSBDevState == NULL)
 		return eUSBDEV_MODE_NONE;
 	return psUSBDevState->eUSBMode;
+}
+
+void USBDEV_MSCEnDisable(
+	int32_t i32EnDisable
+)
+{
+	if(i32EnDisable)
+		g_u8MSCRemove = 0;
+	else
+		g_u8MSCRemove = 1;	
 }
 
 int32_t USBDEV_VCPCanSend(

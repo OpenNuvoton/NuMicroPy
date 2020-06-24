@@ -3,6 +3,7 @@
  * @version  V1.00
  * @brief    M480 USB HAL header file for micropython
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __M48X_USB_H__
@@ -106,6 +107,10 @@ int32_t USBDEV_VCPSendData(
 
 int32_t USBDEV_HIDInReportPacketSize();
 int32_t USBDEV_HIDOutReportPacketSize();
+
+void USBDEV_MSCEnDisable(
+	int32_t i32EnDisable
+);
 
 
 #endif

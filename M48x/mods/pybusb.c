@@ -535,3 +535,21 @@ const mp_obj_type_t pyb_usb_vcp_type = {
 
 
 #endif
+
+
+STATIC mp_obj_t pyb_msc_enable(void) {
+	USBDEV_MSCEnDisable(1);
+	return mp_const_none;
+}
+
+STATIC mp_obj_t pyb_msc_disable(void) {
+	USBDEV_MSCEnDisable(0);
+	return mp_const_none;
+}
+
+MP_DEFINE_CONST_FUN_OBJ_0(pyb_msc_enable_obj, pyb_msc_enable);
+MP_DEFINE_CONST_FUN_OBJ_0(pyb_msc_disable_obj, pyb_msc_disable);
+
+
+
+

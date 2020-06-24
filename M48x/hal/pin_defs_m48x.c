@@ -1,3 +1,12 @@
+/**************************************************************************//**
+ * @file     pin_defs_m48x.c
+ * @version  V0.01
+ * @brief    pin control for M480
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
+ *****************************************************************************/
+
 #include "py/obj.h"
 #include "mods/pybpin.h"
 

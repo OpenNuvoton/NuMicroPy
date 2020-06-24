@@ -16,11 +16,11 @@ NuMicroPy is Nuvoton microcontroller porting for MicroPython. MicroPython is a l
 ## Supported target
 Board            |MCU      |Required ROM size     |Required RAM size
 :----------------|---------|----------------------|------------------
-NuMaker-PFM-M487 |M487     |357KB/648KB(W/lvgl)   |86KB/123KB(W/lvgl)
-NuMaker-IOT-M487 |M487     |322KB                 |46KB
+NuMaker-PFM-M487 |M487     |383KB/660KB(W/lvgl)   |92KB/128KB(W/lvgl)
+NuMaker-IOT-M487 |M487     |351KB                 |64KB
 NuMaker-M263KI   |M263     |266KB                 |35KB
 
-LittlevGL required RAM size 123KB = 91KB + 32KB(SPIM cache)
+LittlevGL required RAM size 128KB = 96KB + 32KB(SPIM cache)
 
 ----
 ## How to start NuMicroPy
@@ -33,7 +33,7 @@ b. Connect USB ICE to PC
 Nu-Link-Me exported a "NuMicro MCU" disk, just Copy and Paste prebuilt firmware.bin into "NuMicro MCU" disk.  
 ![CopyPasteFirmware](https://imgur.com/RcxvyHH.jpg)
 4. Python code update steps  
-a. Connected USB1.1 to PC  
+a. Connected USB1.1 to PC. For windows 7, you must install VCOM driver from "M480BSP/SampleCode/StdDriver/USBD_VCOM_And_Mass_Storage/Windows Dirver" folder.  
 b. Setup your terminal program  
 ![TeraTerm_setup1](https://imgur.com/oKbxDJ2.jpg)  
 ![TeraTerm_setup2](https://imgur.com/tuYp3xh.jpg)  

@@ -3,6 +3,7 @@
  * @version  V1.00
  * @brief    M480 I2C HAL header file for micropython
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2018 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __M48X_I2C_H__

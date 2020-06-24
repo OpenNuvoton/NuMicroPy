@@ -3,6 +3,7 @@
  * @brief    M480 series USB class transfer code for VCP and MSC
  * @version  0.0.1
  *
+ * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 
@@ -16,6 +17,8 @@
 #include "StorIF.h"
 
 #include "mpconfigboard_common.h"
+
+
 
 //EP2 for VCP bulk in and address  0x2
 //EP3 for VCP bulk out and address 0x3
@@ -31,6 +34,7 @@ static S_USBD_INFO_T *s_psUSBDevInfo =  NULL;
 /*--------------------------------------------------------------------------*/
 /* Global variables for MSC */
 
+static uint8_t volatile g_u8EP5Ready = 0;
 static uint8_t volatile g_u8EP6Ready = 0;
 
 static uint8_t g_au8SenseKey[4];
@@ -132,89 +136,6 @@ static int32_t volatile g_i32MSCMaxLun;
 /*-------------------------------------------------------------------------------*/
 /* Functions for VCP*/
 
-#if 0
-
-static volatile uint8_t *s_pu8VCPSendBuf = NULL;
-static volatile uint32_t s_u32VCPSendBufLen = 0;
-static volatile uint32_t s_u32VCPSendBufPos = 0;
-static volatile int32_t s_b32VCPSendTrans = 0;
-
-int32_t VCPTrans_BulkInHandler()
-{
-	int32_t i32Len;
-	uint8_t *pu8EPBufAddr;
-	
-	if(s_pu8VCPSendBuf == NULL){
-		if(s_b32VCPSendTrans == 1){
-			printf("VCPTrans_BulkInHandler 0 \n");
-			s_b32VCPSendTrans = 0;
-		}
-		return 0;
-	}
-		
-	i32Len = s_u32VCPSendBufLen - s_u32VCPSendBufPos;
-	
-	if(i32Len > EP2_VCP_MAX_PKT_SIZE)
-		i32Len = EP2_VCP_MAX_PKT_SIZE;
-	
-	if(i32Len == 0){
-		if(s_b32VCPSendTrans == 1){
-			s_b32VCPSendTrans = 0;
-		}
-		printf("VCPTrans_BulkInHandler 1 \n");
-		return 0;
-	}
-
-	s_b32VCPSendTrans = 1;
-	pu8EPBufAddr = (uint8_t *)(USBD_BUF_BASE + USBD_GET_EP_BUF_ADDR(EP2));
-	USBD_MemCopy(pu8EPBufAddr, (void *)s_pu8VCPSendBuf + s_u32VCPSendBufPos, i32Len);
-	USBD_SET_PAYLOAD_LEN(EP2, i32Len);
-
-	s_u32VCPSendBufPos += i32Len;
-	
-	return i32Len;
-}
-
-int32_t VCPTrans_StartBulkIn(
-	uint8_t *pu8DataBuf,
-	uint32_t u32DataBufLen
-)
-{
-	s_pu8VCPSendBuf = pu8DataBuf;
-	s_u32VCPSendBufLen = u32DataBufLen;
-	s_u32VCPSendBufPos = 0;
-	s_b32VCPSendTrans = 0;
-
-	return VCPTrans_BulkInHandler();
-}
-
-int32_t VCPTrans_BulkInSendedLen()
-{
-	return s_u32VCPSendBufPos;
-}
-
-int32_t VCPTrans_BulkInTransDone()
-{
-	return !s_b32VCPSendTrans;
-}
-
-
-int32_t VCPTrans_BulkInCanSend()
-{
-	if((s_pu8VCPSendBuf != NULL) || (s_b32VCPSendTrans != 0))
-		return 0;
-	return 1;
-}
-
-void VCPTrans_StopBulkIn()
-{
-	s_pu8VCPSendBuf = NULL;
-	s_u32VCPSendBufLen = 0;
-	s_u32VCPSendBufPos = 0;
-
-}
-
-#else
 
 #define MAX_VCP_SEND_BUF_LEN	1024
 static uint8_t s_au8VCPSendBuf[MAX_VCP_SEND_BUF_LEN];
@@ -298,8 +219,6 @@ int32_t VCPTrans_BulkInCanSend()
 	return !s_b32VCPSendTrans;
 }
 
-
-#endif
 
 
 #define MAX_VCP_RECV_BUF_LEN (EP3_VCP_MAX_PKT_SIZE * 3)
@@ -996,7 +915,10 @@ static void MSC_ModeSense10(void)
 
 void MSCTrans_BulkInHandler(void)
 {
-    MSC_AckCmd();
+
+	g_u8EP5Ready = 1;	
+
+//    MSC_AckCmd();
 }
 
 
@@ -1137,6 +1059,7 @@ void MSCVCPTrans_ClassRequest(void)
                 USBD->EP[EP6].CFGP |= USBD_CFGP_CLRRDY_Msk;
 
                 /* Prepare to receive the CBW */
+                g_u8EP5Ready = 0;
                 g_u8EP6Ready = 0;
                 g_u8BulkState = BULK_CBW;
 
@@ -1170,6 +1093,12 @@ void MSCTrans_ProcessCmd(void)
     uint8_t u8Len;
     int32_t i;
     uint32_t Hcount, Dcount;
+
+
+	if (g_u8EP5Ready){
+		g_u8EP5Ready = 0;
+		MSC_AckCmd();
+	}
 
     if (g_u8EP6Ready)
     {
@@ -1236,8 +1165,7 @@ void MSCTrans_ProcessCmd(void)
                 else     /* Hn == Dn (Case 1) */
                 {
 					S_STORIF_IF *psStorIF = s_apsLUNStorIf[g_sCBW.bCBWLUN];	
-					if(!psStorIF->pfnDetect(NULL))
-//                    if (g_u8MSCRemove)
+					if((!psStorIF->pfnDetect(NULL)) || (g_u8MSCRemove))
                     {
                         g_sCSW.dCSWDataResidue = 0;
                         g_sCSW.bCSWStatus = 1;
@@ -1717,5 +1645,6 @@ void MSCVCPTrans_Init(
     g_sCSW.dCSWSignature = CSW_SIGNATURE;
 
 	s_psUSBDevInfo = psUSBDevInfo;
+
 }
 

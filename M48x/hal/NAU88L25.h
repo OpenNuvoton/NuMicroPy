@@ -1,14 +1,11 @@
 /**************************************************************************//**
-*
-* @copyright (C) 2019 Nuvoton Technology Corp. All rights reserved.
-*
-* SPDX-License-Identifier: Apache-2.0
-*
-* Change Logs:
-* Date            Author       Notes
-* 2020-1-16       Wayne        First version
-*
-******************************************************************************/
+ * @file     NAU88L25.h
+ * @version  V0.01
+ * @brief    Driver for NAU88L25
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
+ *****************************************************************************/
 
 #ifndef __ACODEC_NAU88L25_H__
 #define __ACODEC_NAU88L25_H__

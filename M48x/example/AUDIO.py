@@ -1,20 +1,26 @@
 import pyb
 from umachine import AUDIO
 
+pyb.msc_disable()
+
 aud = AUDIO()
 
-print("Play 44-320.mp3")
-aud.mp3_play("/sd/44-320.mp3")
+print("Start record file")
+afile = aud.wav_record(file="/sd/qqq.wav")
+pyb.delay(30000)
+aud.wav_stop()
+
+pyb.delay(1000)
+
+print("Play recorded file")
+aud.wav_play(afile)
 
 #Wait play stop
-while(aud.mp3_status() != aud.STATUS_STOP):
+while(aud.wav_status() != aud.STATUS_STOP):
 	pyb.delay(1000)
-	
-print("End play")
-pyb.delay(1000)
-print("Play 16-128.mp3")
-aud.mp3_play("/sd/16-128.mp3")
-pyb.delay(20000)
-print("Stop play")
-aud.mp3_stop()
 
+print("End play")
+
+pyb.msc_enable()
+
+aud.wav_play("/sd/Left_Right_stereo_44_PCM.wav")

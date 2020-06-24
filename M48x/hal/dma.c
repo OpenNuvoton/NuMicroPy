@@ -1,18 +1,11 @@
-/* mbed Microcontroller Library
- * Copyright (c) 2015-2016 Nuvoton
+/**************************************************************************//**
+ * @file     dma.c
+ * @version  V0.10
+ * @brief   M480 dma functions
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
+ *****************************************************************************/
 
 #include "string.h"
 #include "nu_modutil.h"
@@ -337,7 +330,7 @@ int dma_fill_description(
 		PDMA_T * pdma;
 	
 		uint32_t u32SrcCtrl, u32DstCtrl;
-		uint32_t u32PdmaIntMask=0;
+		//uint32_t u32PdmaIntMask=0;
 		if ( !(dma_chn_mask & (1 << channelid))  )
 			goto exit_hal_dma_fill_description;
 
@@ -354,7 +347,17 @@ int dma_fill_description(
 
 		if(u32ScatterEn){
 			// void PDMA_SetTransferMode(PDMA_T * pdma,uint32_t u32Ch, uint32_t u32Peripheral, uint32_t u32ScatterEn, uint32_t u32DescAddr)
-			printf("dma_fill_description %d, %x \n", channelid, addr_src);
+			printf("dma_fill_description %d, %lx \n", channelid, addr_src);
+			
+			if(addr_src < pdma->SCATBA){
+				printf("ERROR: scatter table address < SCATBA \n");
+			}
+			
+			if((addr_src - pdma->SCATBA) > 0x10000){
+				printf("ERROR: scatter table address offset over 64KB \n");
+			}
+			
+			
 			PDMA_SetTransferMode ( 	pdma,	
 															channelid,
 															u32Peripheral, 
