@@ -1565,8 +1565,11 @@ espi_initiate_cmd(esp_msg_t* msg) {
             AT_PORT_SEND_BEGIN();
             AT_PORT_SEND_CONST_STR("+UART_CUR=");
             espi_send_number(ESP_U32(msg->msg.uart.baudrate), 0, 0);
-//            AT_PORT_SEND_CONST_STR(",8,1,0,0");
+#if ESP_CFG_UART_FLOW_CONTROL
             AT_PORT_SEND_CONST_STR(",8,1,0,3");	//RTS+CTS
+#else
+            AT_PORT_SEND_CONST_STR(",8,1,0,0");
+#endif
             AT_PORT_SEND_END();
             break;
         }

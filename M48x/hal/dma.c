@@ -351,10 +351,12 @@ int dma_fill_description(
 			
 			if(addr_src < pdma->SCATBA){
 				printf("ERROR: scatter table address < SCATBA \n");
+				goto exit_hal_dma_fill_description;
 			}
 			
-			if((addr_src - pdma->SCATBA) > 0x10000){
+			if((addr_src - pdma->SCATBA) >= 0x10000){
 				printf("ERROR: scatter table address offset over 64KB \n");
+				goto exit_hal_dma_fill_description;
 			}
 			
 			

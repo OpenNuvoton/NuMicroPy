@@ -1,6 +1,8 @@
 
 #define MICROPY_HW_BOARD_NAME "NuMaker-IOT-M487"
 
+#define MICROPY_HW_BOARD_NUMAKER_IOT_M487
+
 // I2C busses
 #define MICROPY_HW_I2C0_SCL (pin_G0)
 #define MICROPY_HW_I2C0_SDA (pin_G1)
@@ -15,6 +17,11 @@
 #define MICROPY_HW_SPI0_SCK  (pin_A2) //D13
 #define MICROPY_HW_SPI0_MISO (pin_A1) //D12
 #define MICROPY_HW_SPI0_MOSI (pin_A0) //D11
+
+#define MICROPY_HW_SPI2_NSS  (pin_A11) //SS
+#define MICROPY_HW_SPI2_SCK  (pin_A10) //CLK
+#define MICROPY_HW_SPI2_MISO (pin_A9) //MISO
+#define MICROPY_HW_SPI2_MOSI (pin_A8) //MOSI
 
 #define MICROPY_HW_SPI3_NSS  (pin_C9) //D2
 #define MICROPY_HW_SPI3_SCK  (pin_C10) //D3
@@ -77,10 +84,12 @@
 #define MICROPY_HW_LED0_NAME		"led0"
 #define MICROPY_HW_LED1_NAME		"led1"
 #define MICROPY_HW_LED2_NAME		"led2"
+#define MICROPY_HW_LEDRGB_NAME		"rgb"
 
 #define MICROPY_HW_LED0             (pin_H0) // red
 #define MICROPY_HW_LED1             (pin_H1) // yellow
 #define MICROPY_HW_LED2             (pin_H2) // green
+#define MICROPY_HW_LEDRGB           (pin_B8) // A2, SPI MOSI pin. Using SPI to drive serial RGB LEB
 
 #define MICROPY_HW_LED_OFF(pin)     (mp_hal_pin_high(pin))
 #define MICROPY_HW_LED_ON(pin)     	(mp_hal_pin_low(pin))
@@ -111,6 +120,4 @@
 
 #define MICROPY_NAU88L25_JK_EN			(pin_E13)
 #define MICROPY_NAU88L25_JK_DET			(pin_C13)
-
-
 

@@ -243,7 +243,12 @@ static int configure_uart(
 	sUARTInit.u32DataWidth = UART_WORD_LEN_8;
 	sUARTInit.u32Parity = UART_PARITY_NONE;
 	sUARTInit.u32StopBits = UART_STOP_BIT_1;
+
+#if ESP_CFG_UART_FLOW_CONTROL
 	sUARTInit.eFlowControl = eUART_HWCONTROL_CTS | eUART_HWCONTROL_RTS;
+#else
+	sUARTInit.eFlowControl = eUART_HWCONTROL_NONE;
+#endif
 
 	if(s_bInitialized){
 		if(u32BaudRate != s_i32CurBaudRate){

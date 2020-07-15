@@ -112,7 +112,7 @@ void USBDEV_MSCEnDisable(
 	int32_t i32EnDisable
 );
 
-
+int32_t USBDEV_DataBusConnect(void);
 #endif
 
 

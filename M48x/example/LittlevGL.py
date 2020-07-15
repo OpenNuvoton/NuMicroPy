@@ -2,11 +2,12 @@ import lvgl as lv
 import ILI9341 as ili
 import TouchADC as TP
 
+disp = ili.display()
+disp.init()
+
 lv.init()
 tp = TP.touch()
 tp.init()
-disp = ili.display()
-disp.init()
 
 disp_buf1 = lv.disp_buf_t()
 buf1_1 = bytearray(320*10)

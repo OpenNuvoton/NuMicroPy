@@ -85,6 +85,12 @@ int SPI_SlaveBlockWriteRead(
 	char write_fill
 );
 
+int SPI_SetDataWidth(
+	spi_t *obj,
+	int data_width_bits
+);
+
+
 void spi_master_transfer(
 	spi_t *obj, 
 	const void *tx, 
@@ -101,6 +107,10 @@ void spi_irq_handler_asynch(spi_t *obj);
 
 int is_spi_trans_done(spi_t *obj);
 void Handle_SPI_Irq(SPI_T *spi);
+
+
+int SPI_MasterWriteThenRead(spi_t *obj, const char *tx_buffer, int tx_length,
+                           char *rx_buffer, int rx_length, char write_fill);
 
 
 #endif

@@ -8,6 +8,7 @@
 #include "py/mphal.h"
 
 #if MICROPY_LVGL
+#include "mpconfigboard.h"
 
 #include "NuMicro.h"
 #include "lvgl/lvgl.h"
@@ -16,6 +17,64 @@
 #include "lib/oofatfs/ff.h"
 #include "extmod/vfs.h"
 #include "extmod/vfs_fat.h"
+
+#if defined (MICROPY_HW_BOARD_NUMAKER_PFM_M487)
+
+#define TOUCHADC_XL_PIN			PH4
+#define TOUCHADC_XL_PIN_PORT	PH
+#define TOUCHADC_XL_PIN_BIT		BIT4
+
+#define TOUCHADC_XR_PIN			PB9
+#define TOUCHADC_XR_PIN_PORT	PB
+#define TOUCHADC_XR_PIN_BIT		BIT9
+#define TOUCHADC_XR_PIN_FUN		SYS_GPB_MFPH_PB9MFP_EADC0_CH9
+#define TOUCHADC_XR_PIN_MASK	SYS_GPB_MFPH_PB9MFP_Msk
+#define TOUCHADC_XR_PIN_REG		(SYS->GPB_MFPH)
+#define TOUCHADC_XR_ADC_CHANNEL 9
+
+#define TOUCHADC_YU_PIN			PB8
+#define TOUCHADC_YU_PIN_PORT	PB
+#define TOUCHADC_YU_PIN_BIT		BIT8
+#define TOUCHADC_YU_PIN_FUN		SYS_GPB_MFPH_PB8MFP_EADC0_CH8
+#define TOUCHADC_YU_PIN_MASK	SYS_GPB_MFPH_PB8MFP_Msk
+#define TOUCHADC_YU_PIN_REG		(SYS->GPB_MFPH)
+#define TOUCHADC_YU_ADC_CHANNEL 8
+
+#define TOUCHADC_YD_PIN			PH5
+#define TOUCHADC_YD_PIN_PORT	PH
+#define TOUCHADC_YD_PIN_BIT		BIT5
+
+#endif
+
+
+#if defined (MICROPY_HW_BOARD_NUMAKER_IOT_M487)
+
+#define TOUCHADC_XL_PIN			PB7
+#define TOUCHADC_XL_PIN_PORT	PB
+#define TOUCHADC_XL_PIN_BIT		BIT7
+
+#define TOUCHADC_XR_PIN			PB9
+#define TOUCHADC_XR_PIN_PORT	PB
+#define TOUCHADC_XR_PIN_BIT		BIT9
+#define TOUCHADC_XR_PIN_FUN		SYS_GPB_MFPH_PB9MFP_EADC0_CH9
+#define TOUCHADC_XR_PIN_MASK	SYS_GPB_MFPH_PB9MFP_Msk
+#define TOUCHADC_XR_PIN_REG		SYS->GPB_MFPH
+#define TOUCHADC_XR_ADC_CHANNEL 9
+
+#define TOUCHADC_YU_PIN			PB6
+#define TOUCHADC_YU_PIN_PORT	PB
+#define TOUCHADC_YU_PIN_BIT		BIT6
+#define TOUCHADC_YU_PIN_FUN		SYS_GPB_MFPL_PB6MFP_EADC0_CH6
+#define TOUCHADC_YU_PIN_MASK	SYS_GPB_MFPL_PB6MFP_Msk
+#define TOUCHADC_YU_PIN_REG		SYS->GPB_MFPL
+#define TOUCHADC_YU_ADC_CHANNEL 6
+
+#define TOUCHADC_YD_PIN			PB8
+#define TOUCHADC_YD_PIN_PORT	PB
+#define TOUCHADC_YD_PIN_BIT		BIT8
+
+#endif
+
 
 typedef struct _TouchADC_obj_t {
     mp_obj_base_t base;
@@ -48,21 +107,22 @@ static uint16_t Get_TP_X(void)
     uint16_t    x_adc_in;
 
     /*=== Get X from ADC input ===*/
-    GPIO_SetMode(PB, BIT9, GPIO_MODE_OUTPUT);   // XR
-    GPIO_SetMode(PH, BIT5, GPIO_MODE_INPUT);    // YD
-    GPIO_SetMode(PH, BIT4, GPIO_MODE_OUTPUT);   // XL
-    PB9 = 1;
-    PH4 = 0;
+    GPIO_SetMode(TOUCHADC_XR_PIN_PORT, TOUCHADC_XR_PIN_BIT, GPIO_MODE_OUTPUT);   // XR
+    GPIO_SetMode(TOUCHADC_YD_PIN_PORT, TOUCHADC_YD_PIN_BIT, GPIO_MODE_INPUT);    // YD
+    GPIO_SetMode(TOUCHADC_XL_PIN_PORT, TOUCHADC_XL_PIN_BIT, GPIO_MODE_OUTPUT);   // XL
+    TOUCHADC_XR_PIN = 1;
+    TOUCHADC_XL_PIN = 0;
 
-    /* Configure the GPB8 ADC analog input pins.  */
-    SYS->GPB_MFPH &= ~(SYS_GPB_MFPH_PB8MFP_Msk | SYS_GPB_MFPH_PB9MFP_Msk);
-    SYS->GPB_MFPH |= SYS_GPB_MFPH_PB8MFP_EADC0_CH8;
+    /* Configure the YU(GPB8) ADC analog input pins.  */
+    TOUCHADC_XR_PIN_REG &= ~(TOUCHADC_XR_PIN_MASK);
+    TOUCHADC_YU_PIN_REG &= ~(TOUCHADC_YU_PIN_MASK);
+    TOUCHADC_YU_PIN_REG |= TOUCHADC_YU_PIN_FUN;
 
-    /* Disable the GPB8 digital input path to avoid the leakage current. */
-    GPIO_DISABLE_DIGITAL_PATH(PB, BIT8);
+    /* Disable the YU(GPB8) digital input path to avoid the leakage current. */
+    GPIO_DISABLE_DIGITAL_PATH(TOUCHADC_YU_PIN_PORT, TOUCHADC_YU_PIN_BIT);
 
     /* Configure the sample module 1 for analog input channel 8 and software trigger source.*/
-    EADC_ConfigSampleModule(EADC, 1, EADC_SOFTWARE_TRIGGER, 8); // YU
+    EADC_ConfigSampleModule(EADC, 1, EADC_SOFTWARE_TRIGGER, TOUCHADC_YU_ADC_CHANNEL); // YU
 
     /* Clear the A/D ADINT1 interrupt flag for safe */
     EADC_CLR_INT_FLAG(EADC, EADC_STATUS2_ADIF1_Msk);
@@ -92,21 +152,22 @@ static uint16_t Get_TP_Y(void)
     uint16_t    y_adc_in;
 
     /*=== Get Y from ADC input ===*/
-    GPIO_SetMode(PB, BIT8, GPIO_MODE_OUTPUT);   // YU
-    GPIO_SetMode(PH, BIT5, GPIO_MODE_OUTPUT);   // YD
-    GPIO_SetMode(PH, BIT4, GPIO_MODE_INPUT);    // XL
-    PB8 = 1;
-    PH5 = 0;
+    GPIO_SetMode(TOUCHADC_YU_PIN_PORT, TOUCHADC_YU_PIN_BIT, GPIO_MODE_OUTPUT);   // YU
+    GPIO_SetMode(TOUCHADC_YD_PIN_PORT, TOUCHADC_YD_PIN_BIT, GPIO_MODE_OUTPUT);   // YD
+    GPIO_SetMode(TOUCHADC_XL_PIN_PORT, TOUCHADC_XL_PIN_BIT, GPIO_MODE_INPUT);    // XL
+    TOUCHADC_YU_PIN = 1;
+    TOUCHADC_YD_PIN = 0;
 
-    /* Configure the GPB9 ADC analog input pins.  */
-    SYS->GPB_MFPH &= ~(SYS_GPB_MFPH_PB8MFP_Msk | SYS_GPB_MFPH_PB9MFP_Msk);
-    SYS->GPB_MFPH |= SYS_GPB_MFPH_PB9MFP_EADC0_CH9;
+    /* Configure the XR(GPB9) ADC analog input pins.  */
+	TOUCHADC_YU_PIN_REG &= ~(TOUCHADC_YU_PIN_MASK);
+    TOUCHADC_XR_PIN_REG &= ~(TOUCHADC_XR_PIN_MASK);
+    TOUCHADC_XR_PIN_REG |= TOUCHADC_XR_PIN_FUN;
 
-    /* Disable the GPB9 digital input path to avoid the leakage current. */
-    GPIO_DISABLE_DIGITAL_PATH(PB, BIT9);
+    /* Disable the XR(GPB9) digital input path to avoid the leakage current. */
+    GPIO_DISABLE_DIGITAL_PATH(TOUCHADC_XR_PIN_PORT, TOUCHADC_XR_PIN_BIT);
 
     /* Configure the sample module 2 for analog input channel 9 and software trigger source.*/
-    EADC_ConfigSampleModule(EADC, 2, EADC_SOFTWARE_TRIGGER, 9); // XR
+    EADC_ConfigSampleModule(EADC, 2, EADC_SOFTWARE_TRIGGER, TOUCHADC_XR_ADC_CHANNEL); // XR
 
     /* Clear the A/D ADINT1 interrupt flag for safe */
     EADC_CLR_INT_FLAG(EADC, EADC_STATUS2_ADIF1_Msk);
@@ -156,7 +217,7 @@ static bool TouchDriver_Read(
 	u16X = Get_TP_X();
 	u16Y = Get_TP_Y();
 	
-	if((u16X == 0xFFF) || (u16X == 0xFFF)){
+	if((u16X == 0xFFF) || (u16Y == 0xFFF)){
 		psIndevData->state = LV_INDEV_STATE_REL;
 		psIndevData->point.x = s_u16X;
 		psIndevData->point.y = s_u16Y;
@@ -757,6 +818,21 @@ STATIC bool TouchADC_Read(
 	return false;
 }
 
+STATIC mp_obj_t TouchADC_ReadRaw(mp_obj_t self_in) {
+	TouchADC_obj_t *self = (TouchADC_obj_t *)self_in;
+
+	uint16_t u16ReadX;
+	uint16_t u16ReadY;
+	
+	u16ReadX = Get_TP_X();
+	u16ReadY = Get_TP_Y();
+	printf("TouchADC_ReadRaw %x, %x\n", u16ReadX, u16ReadY);
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(TouchADC_readraw_obj, TouchADC_ReadRaw);
+
+
 STATIC mp_obj_t TouchADC_iscalibrated(mp_obj_t self_in) {
 	TouchADC_obj_t *self = (TouchADC_obj_t *)self_in;
 
@@ -803,6 +879,7 @@ STATIC const mp_rom_map_elem_t TouchADC_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_iscalibrated), MP_ROM_PTR(&TouchADC_iscalibrated_obj) },
     { MP_ROM_QSTR(MP_QSTR_calibrate), MP_ROM_PTR(&TouchADC_calibrate_obj) },
     { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&PTR_OBJ(TouchADC_Read)) },
+    { MP_ROM_QSTR(MP_QSTR_readraw), MP_ROM_PTR(&TouchADC_readraw_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(TouchADC_locals_dict, TouchADC_locals_dict_table);

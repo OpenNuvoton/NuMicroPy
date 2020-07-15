@@ -28,6 +28,7 @@ uint32_t volatile g_u32VCPOutToggle = 0;
 uint8_t volatile g_u8MSCRemove = 0;
 uint32_t volatile g_u32VCPConnect = 0;
 uint32_t volatile g_u32MSCConnect = 0;
+uint32_t volatile g_u32DataBusConnect = 0;
 
 
 static void EnableHSUSBDevPhyClock(void){
@@ -135,6 +136,11 @@ E_USBDEV_MODE USBDEV_GetMode(
 	if(psUSBDevState == NULL)
 		return eUSBDEV_MODE_NONE;
 	return psUSBDevState->eUSBMode;
+}
+
+int32_t USBDEV_DataBusConnect(void)
+{
+	return g_u32DataBusConnect;
 }
 
 void USBDEV_MSCEnDisable(
@@ -441,15 +447,20 @@ void Handle_USBDEV_Irq(
 			g_u32VCPOutToggle = g_u32MSCOutToggle = g_u32MSCOutSkip = 0;
 			g_u32VCPConnect = 0;
 			g_u32MSCConnect = 0;
+			g_u32DataBusConnect = 1;
+			printf("USBD_STATE_USBRST \n");
         }
         if (u32BusState & USBD_STATE_SUSPEND)
         {
             /* Enable USB but disable PHY */
+			printf("USBD_STATE_SUSPEND \n");
+			g_u32DataBusConnect = 0;
             USBD_DISABLE_PHY();
         }
         if (u32BusState & USBD_STATE_RESUME)
         {
             /* Enable USB and enable PHY */
+			printf("USBD_STATE_RESUME \n");
             USBD_ENABLE_USB();
         }
     }

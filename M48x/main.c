@@ -345,6 +345,9 @@ STATIC bool init_sdcard_fs(void) {
 #define MP_TASK_HEAP_SIZE	(28 * 1024)
 #endif
 
+//#define _CTRL_D_SOFT_RESET_
+
+
 #if MICROPY_PY_THREAD
 STATIC StaticTask_t mp_task_tcb;
 STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
@@ -359,6 +362,7 @@ STATIC volatile bool mp_USBRun;
 
 static void ExecuteUsbMSC(void){
 	S_USBDEV_STATE *psUSBDev_msc_state = NULL;
+	uint32_t u32CheckConnTimeOut = 0;
 	psUSBDev_msc_state = USBDEV_Init(USBD_VID, USBD_MSC_VCP_PID, eUSBDEV_MODE_MSC_VCP);
 	if(psUSBDev_msc_state == NULL){
 		mp_raise_ValueError("bad USB mode");
@@ -370,15 +374,23 @@ static void ExecuteUsbMSC(void){
 		USBDEV_Start(psUSBDev_msc_state);
 		printf("Start USB device MSC and VCP \n");
 
-		while(USBD_IS_ATTACHED())
-		{
-			MSCTrans_ProcessCmd();
-//			vTaskDelay(1);
+		u32CheckConnTimeOut = mp_hal_ticks_ms() + 1000;
+		
+		//Wait usb data bus ready (1 sec) 
+		while(mp_hal_ticks_ms() < u32CheckConnTimeOut){
+			if(USBDEV_DataBusConnect())
+				break;
+		}
+
+		if(USBDEV_DataBusConnect()){
+			while(USBD_IS_ATTACHED() && (mp_USBRun == true))
+			{
+				MSCTrans_ProcessCmd();
+			}
 		}
 	}
-	else{
-		USBDEV_Deinit(psUSBDev_msc_state);
-	}
+	
+	USBDEV_Deinit(psUSBDev_msc_state);
 
 	mp_USBRun = false;
 	printf("ExecuteUsbMSC exit \n");
@@ -398,6 +410,8 @@ void mp_task(void *pvParameter) {
 	bool OnlyMSCVCPMode = false;
 
 	#if MICROPY_PY_THREAD
+	TaskHandle_t mpUSBTaskHandle = NULL;
+
 	mp_thread_init(&mp_task_stack[0], MP_TASK_STACK_LEN);
 	#endif
 	
@@ -408,7 +422,9 @@ void mp_task(void *pvParameter) {
 		printf("Run only MSC and VCP mode \n");
 	}
 
+#if defined(_CTRL_D_SOFT_RESET_)
 soft_reset:
+#endif
 	// initialise the stack pointer for the main thread
 	mp_stack_set_top((void *)sp);
 	mp_stack_set_limit(MP_TASK_STACK_SIZE - 1024);
@@ -449,14 +465,14 @@ soft_reset:
 
 	//Open MSC and VCP
 
-	TaskHandle_t mpUSBTaskHandle;
+	if(mpUSBTaskHandle == NULL){
+		mp_USBRun = true;
+		mpUSBTaskHandle = xTaskCreateStatic(mp_usbtask, "USB_MSCVCP",
+			MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, mp_usbtask_stack, &mp_usbtask_tcb);
 
-	mp_USBRun = true;
-    mpUSBTaskHandle = xTaskCreateStatic(mp_usbtask, "USB_MSCVCP",
-        MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, mp_usbtask_stack, &mp_usbtask_tcb);
-
-    if (mpUSBTaskHandle == NULL){
-		__fatal_error("FreeRTOS create USB task!");
+		if (mpUSBTaskHandle == NULL){
+			__fatal_error("FreeRTOS create USB task!");
+		}
 	}
 
 	S_USBDEV_STATE *psUSBDevState;
@@ -475,8 +491,9 @@ soft_reset:
 
 	vTaskDelay(500);
 	
-	printf("Start execute boot.py and main.py \n");
 #endif
+
+	printf("Start execute boot.py and main.py \n");
 
 	// set sys.path based on mounted filesystems (/sd is first so it can override /flash)	
 	if (mounted_spiflash) {
@@ -521,18 +538,28 @@ soft_reset:
 		}
 	}
 
+
 	#if MICROPY_PY_THREAD
 	mp_thread_deinit();
 	#endif
 
-	mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
+#if defined(_CTRL_D_SOFT_RESET_)
+	mp_hal_stdout_tx_str("PYB: soft reset \r\n");
+#else
+	mp_hal_stdout_tx_str("PYB: chip reset \r\n");
+#endif
 
 	// deinitialise peripherals
 	//    machine_pins_deinit();
 
 	mp_deinit();
 	fflush(stdout);
+
+#if defined(_CTRL_D_SOFT_RESET_)
 	goto soft_reset;
+#else
+	SYS_ResetChip();
+#endif
 }
 
 

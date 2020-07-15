@@ -71,7 +71,7 @@
 #define MICROPY_PY_BUILTINS_PROPERTY (0)
 #define MICROPY_PY_BUILTINS_MIN_MAX (0)
 #define MICROPY_PY_BUILTINS_INPUT   (1)
-
+#define MICROPY_PY_BUILTINS_EXECFILE (1)
 
 // Python internal features
 #define MICROPY_ENABLE_GC           (1)

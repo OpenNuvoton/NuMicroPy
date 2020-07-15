@@ -9,33 +9,97 @@
 
 #if MICROPY_LVGL
 
+#include "mpconfigboard.h"
+
 #include "NuMicro.h"
 #include "lvgl/lvgl.h"
 #include "driver/include/common.h"
+
+#include "hal/M48x_SPI.h"
 
 typedef struct _ILI9341_obj_t {
     mp_obj_base_t base;
     bool initialized;
 	int32_t i32Width;
+	spi_t sSPIObj;
 } ILI9341_obj_t;
 
 
+#if defined (MICROPY_HW_BOARD_NUMAKER_PFM_M487)
+
+#define _ILI9341_USING_EBI_
+
+//LCD RS pin
+#define ILI9341_RS_PIN			PH3
+#define ILI9341_RS_PIN_PORT		PH
+#define ILI9341_RS_PIN_BIT		BIT3
+
+//LCD RESET pin
+#define ILI9341_RST_PIN			PB6
+#define ILI9341_RST_PIN_PORT	PB
+#define ILI9341_RST_PIN_BIT	BIT6
+
+//LCD backlight pin
+#define ILI9341_BL_PIN			PB7
+#define ILI9341_BL_PIN_PORT		PB
+#define ILI9341_BL_PIN_BIT		BIT7
+
+#endif
+
+#if defined (MICROPY_HW_BOARD_NUMAKER_IOT_M487)
+
+#define _ILI9341_USING_SPI_
+
+//LCD RS pin
+#define ILI9341_RS_PIN			PB2
+#define ILI9341_RS_PIN_PORT		PB
+#define ILI9341_RS_PIN_BIT		BIT2
+
+//LCD RESET pin
+#define ILI9341_RST_PIN			PB3
+#define ILI9341_RST_PIN_PORT	PB
+#define ILI9341_RST_PIN_BIT		BIT3
+
+//LCD backlight pin
+#define ILI9341_BL_PIN			PE5
+#define ILI9341_BL_PIN_PORT		PE
+#define ILI9341_BL_PIN_BIT		BIT5
+
+//LCD SPI pin
+#define ILI9341_SPI_SS			MICROPY_HW_SPI2_NSS
+#define ILI9341_SPI_CLK			MICROPY_HW_SPI2_SCK
+#define ILI9341_SPI_MISO		MICROPY_HW_SPI2_MISO
+#define ILI9341_SPI_MOSI		MICROPY_HW_SPI2_MOSI
+#endif
+
 /* LCD Module "RESET" */
-#define SET_RST PB6 = 1;
-#define CLR_RST PB6 = 0;
+#define SET_RST ILI9341_RST_PIN = 1;
+#define CLR_RST ILI9341_RST_PIN = 0;
 
 /* LCD Module "RS" */
-#define SET_RS  PH3 = 1;
-#define CLR_RS  PH3 = 0;
+#define SET_RS  ILI9341_RS_PIN = 1;
+#define CLR_RS  ILI9341_RS_PIN = 0;
 
 /*-----------------------------------------------*/
 // Write control registers of LCD module  
 // 
 /*-----------------------------------------------*/
-static void LCD_WR_REG(uint16_t cmd)
+static void LCD_WR_REG(
+	ILI9341_obj_t *self,
+	uint16_t cmd
+)
 {
     CLR_RS
+#if defined(_ILI9341_USING_EBI_)
     EBI0_WRITE_DATA16(0x00000000, cmd);
+#endif
+#if defined(_ILI9341_USING_SPI_)
+	SPI_SetDataWidth(&self->sSPIObj, 8);
+	SPI_SET_SS_LOW(self->sSPIObj.spi);
+	SPI_MasterBlockWriteRead(&self->sSPIObj, (const char *)&cmd, 1, NULL, 0, 0);
+	while(!(SPI_GET_TX_FIFO_EMPTY_FLAG(self->sSPIObj.spi)));
+	SPI_SET_SS_HIGH(self->sSPIObj.spi);
+#endif
     SET_RS
 
 }
@@ -44,21 +108,91 @@ static void LCD_WR_REG(uint16_t cmd)
 // Write data to SRAM of LCD module  
 // 
 /*-----------------------------------------------*/
-static void LCD_WR_DATA(uint16_t dat)
+static void LCD_WR_DATA(
+	ILI9341_obj_t *self,
+	uint16_t dat
+)
 {
+#if defined(_ILI9341_USING_EBI_)
     EBI0_WRITE_DATA16(0x00030000, dat);
-
+#endif
+#if defined(_ILI9341_USING_SPI_)
+	SPI_SetDataWidth(&self->sSPIObj, 8);
+	SPI_SET_SS_LOW(self->sSPIObj.spi);
+	SPI_MasterBlockWriteRead(&self->sSPIObj, (const char *)&dat, 1, NULL, 0, 0);
+	while(!(SPI_GET_TX_FIFO_EMPTY_FLAG(self->sSPIObj.spi)));
+	SPI_SET_SS_HIGH(self->sSPIObj.spi);
+#endif
 }
 
 /*-----------------------------------------------*/
 // Read data from SRAM of LCD module 
 // 
 /*-----------------------------------------------*/
-static uint16_t LCD_RD_DATA(void)
+
+#if defined(_ILI9341_USING_EBI_)
+static uint16_t LCD_EBI_RD_DATA(
+	ILI9341_obj_t *self
+)
 {
     return EBI0_READ_DATA16(0x00030000);
+}
+#endif
+
+#if defined(_ILI9341_USING_SPI_)
+
+static void LCD_SPI_RD_REG(
+	ILI9341_obj_t *self,
+	uint16_t cmd
+)
+{
+    CLR_RS
+	SPI_SetDataWidth(&self->sSPIObj, 8);
+	SPI_SET_SS_LOW(self->sSPIObj.spi);
+	SPI_MasterBlockWriteRead(&self->sSPIObj, (const char *)&cmd, 1, NULL, 0, 0);
+    SET_RS
 
 }
+
+static uint16_t LCD_SPI_RD_DATA(
+	ILI9341_obj_t *self
+)
+{
+	uint16_t u16Data = 0;
+
+	SPI_SetDataWidth(&self->sSPIObj, 8);
+	SPI_MasterBlockWriteRead(&self->sSPIObj, NULL, 0, (char *)&u16Data, 1, 0);
+	while(!(SPI_GET_TX_FIFO_EMPTY_FLAG(self->sSPIObj.spi)));
+	SPI_SET_SS_HIGH(self->sSPIObj.spi);
+	return u16Data;
+}
+
+static void LCD_SPI_WR_DATA16(
+	ILI9341_obj_t *self,
+	uint16_t u16Data
+)
+{
+	SPI_SetDataWidth(&self->sSPIObj, 16);
+	SPI_MasterBlockWriteRead(&self->sSPIObj, (char *)&u16Data, 2, NULL, 0, 0);
+	while(!(SPI_GET_TX_FIFO_EMPTY_FLAG(self->sSPIObj.spi)));
+}
+
+uint16_t ILI9341_ReadRegister(
+	ILI9341_obj_t *self,
+	uint8_t Addr, 
+	uint8_t xParameter
+)
+{
+    uint16_t data=0;
+
+	LCD_WR_REG(self, 0xD9);
+	LCD_WR_DATA(self, 0x10 + xParameter);
+	LCD_SPI_RD_REG(self, Addr);
+	data = LCD_SPI_RD_DATA(self);
+
+	return data;
+}
+#endif
 
 /********************************************************************
 *
@@ -67,13 +201,32 @@ static uint16_t LCD_RD_DATA(void)
 *   Function description:
 *   Writes multiple values to a display register.
 */
-static void LcdWriteDataMultiple(uint16_t * pData, int NumItems)
+static void LcdWriteDataMultiple(
+	ILI9341_obj_t *self,
+	uint16_t * pData, 
+	int NumItems
+)
 {
+#if defined(_ILI9341_USING_EBI_)
     while (NumItems--) {
         EBI0_WRITE_DATA16(0x00030000,*pData++);
     }
+#endif
+
+#if defined(_ILI9341_USING_SPI_)
+	
+	SPI_SET_SS_LOW(self->sSPIObj.spi);
+
+	SPI_SetDataWidth(&self->sSPIObj, 16);
+	SPI_MasterBlockWriteRead(&self->sSPIObj, (char *)pData, (NumItems * sizeof(uint16_t)), NULL, 0, 0);
+	while(!(SPI_GET_TX_FIFO_EMPTY_FLAG(self->sSPIObj.spi)));
+
+	SPI_SET_SS_HIGH(self->sSPIObj.spi);
+
+#endif
 }
 
+#if defined(_ILI9341_USING_EBI_)
 
 static void EBI_FuncPinInit(void)
 {
@@ -105,8 +258,8 @@ static void EBI_FuncPinInit(void)
                       SYS_GPH_MFPH_PH10MFP_EBI_AD14 | SYS_GPH_MFPH_PH11MFP_EBI_AD15);
 
     /* Configure PH.3 as Output mode for LCD_RS (use GPIO PH.3 to control LCD_RS) */
-    GPIO_SetMode(PH, BIT3, GPIO_MODE_OUTPUT);
-    PH3 = 1;
+    GPIO_SetMode(ILI9341_RS_PIN_PORT, ILI9341_RS_PIN_BIT, GPIO_MODE_OUTPUT);
+    ILI9341_RS_PIN = 1;
 
     /* EBI RD and WR pins on PE.4 and PE.5 */
     SYS->GPE_MFPL &= ~(SYS_GPE_MFPL_PE4MFP_Msk | SYS_GPE_MFPL_PE5MFP_Msk);
@@ -117,16 +270,109 @@ static void EBI_FuncPinInit(void)
     SYS->GPD_MFPH |= SYS_GPD_MFPH_PD14MFP_EBI_nCS0;
 
     /* Configure PB.6 and PB.7 as Output mode for LCD_RST and LCD_Backlight */
-    GPIO_SetMode(PB, BIT6, GPIO_MODE_OUTPUT);
-    GPIO_SetMode(PB, BIT7, GPIO_MODE_OUTPUT);
-    PB6 = 1;
-    PB7 = 0;
+    GPIO_SetMode(ILI9341_RST_PIN_PORT, ILI9341_RST_PIN_BIT, GPIO_MODE_OUTPUT);
+    ILI9341_RST_PIN = 1;
+
+    GPIO_SetMode(ILI9341_BL_PIN_PORT, ILI9341_BL_PIN_BIT, GPIO_MODE_OUTPUT);
+    ILI9341_BL_PIN = 0;
     
+	//FIXME: check pin usage for PH5,6,7
     GPIO_SetMode(PH, BIT5, GPIO_MODE_INPUT);
     GPIO_SetMode(PH, BIT6, GPIO_MODE_INPUT);
     GPIO_SetMode(PH, BIT7, GPIO_MODE_INPUT);
 }
+#endif
 
+#if defined(_ILI9341_USING_SPI_)
+
+static int32_t SPI_FuncPinInit(
+	ILI9341_obj_t *self
+)
+{
+	SPI_InitTypeDef sSPIInit;
+	
+	//check spi pin
+	const pin_af_obj_t *af_spi_ss = pin_find_af_by_fn_type(ILI9341_SPI_SS, AF_FN_SPI, AF_PIN_TYPE_SPI_SS);
+	const pin_af_obj_t *af_spi_clk = pin_find_af_by_fn_type(ILI9341_SPI_CLK, AF_FN_SPI, AF_PIN_TYPE_SPI_CLK);
+	const pin_af_obj_t *af_spi_miso = pin_find_af_by_fn_type(ILI9341_SPI_MISO, AF_FN_SPI, AF_PIN_TYPE_SPI_MISO);
+	const pin_af_obj_t *af_spi_mosi = pin_find_af_by_fn_type(ILI9341_SPI_MOSI, AF_FN_SPI, AF_PIN_TYPE_SPI_MOSI);
+
+	if((af_spi_ss == NULL) || (af_spi_clk == NULL) || (af_spi_miso == NULL) ||(af_spi_mosi == NULL)){
+       nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "ILI9341 SPI pins"));
+	}
+
+	self->sSPIObj.spi = (SPI_T *)af_spi_clk->reg;
+	
+	uint32_t mode = MP_HAL_PIN_MODE_ALT_PUSH_PULL;
+	mp_hal_pin_config_alt(ILI9341_SPI_SS, mode, AF_FN_SPI, af_spi_ss->unit);
+	mp_hal_pin_config_alt(ILI9341_SPI_CLK, mode, AF_FN_SPI, af_spi_clk->unit);
+	mp_hal_pin_config_alt(ILI9341_SPI_MISO, mode, AF_FN_SPI, af_spi_miso->unit);
+	mp_hal_pin_config_alt(ILI9341_SPI_MOSI, mode, AF_FN_SPI, af_spi_mosi->unit);
+	
+	sSPIInit.Mode =	SPI_MASTER;
+	sSPIInit.BaudRate =	36000000;	//over 40M is not work
+	sSPIInit.ClockPolarity =	0;
+	sSPIInit.Direction = SPI_DIRECTION_2LINES;
+	sSPIInit.Bits = 8;
+	sSPIInit.FirstBit = SPI_FIRSTBIT_MSB;
+	sSPIInit.ClockPhase = SPI_PHASE_1EDGE;
+
+	SPI_Init(&self->sSPIObj, &sSPIInit);
+
+	SPI_DisableAutoSS(self->sSPIObj.spi);
+
+    /* Configure PB.2 as Output mode for LCD_RS (use GPIO PB.2 to control LCD_RS) */
+    GPIO_SetMode(ILI9341_RS_PIN_PORT, ILI9341_RS_PIN_BIT, GPIO_MODE_OUTPUT);
+    ILI9341_RS_PIN = 1;
+
+    /* Configure PB.3 and PE.5 as Output mode for LCD_RST and LCD_Backlight */
+    GPIO_SetMode(ILI9341_RST_PIN_PORT, ILI9341_RST_PIN_BIT, GPIO_MODE_OUTPUT);
+    ILI9341_RST_PIN = 1;
+
+    GPIO_SetMode(ILI9341_BL_PIN_PORT, ILI9341_BL_PIN_BIT, GPIO_MODE_OUTPUT);
+    ILI9341_BL_PIN = 0;
+
+	return 0;
+}
+
+#endif
+
+static void ILI9341_FillScreeen(
+	ILI9341_obj_t *self,
+	uint16_t u16Color
+)
+{
+
+	/*Column addresses*/
+	LCD_WR_REG(self, 0x2A);
+	SPI_SET_SS_LOW(self->sSPIObj.spi);
+	LCD_SPI_WR_DATA16(self, 0);
+	SPI_SET_SS_HIGH(self->sSPIObj.spi);
+	SPI_SET_SS_LOW(self->sSPIObj.spi);
+	LCD_SPI_WR_DATA16(self, 319);
+	SPI_SET_SS_HIGH(self->sSPIObj.spi);
+
+
+	LCD_WR_REG(self, 0x2B);
+	SPI_SET_SS_LOW(self->sSPIObj.spi);
+	LCD_SPI_WR_DATA16(self, 0);
+	SPI_SET_SS_HIGH(self->sSPIObj.spi);
+	SPI_SET_SS_LOW(self->sSPIObj.spi);
+	LCD_SPI_WR_DATA16(self, 239);
+	SPI_SET_SS_HIGH(self->sSPIObj.spi);
+
+	/*Memory write*/
+	LCD_WR_REG(self, 0x2C);	
+
+	int i;
+	SPI_SET_SS_LOW(self->sSPIObj.spi);
+	
+	for(i = 0 ; i < (240 * 320); i ++){
+		LCD_SPI_WR_DATA16(self, u16Color);
+	}
+
+	SPI_SET_SS_HIGH(self->sSPIObj.spi);
+}
 
 /*-----------------------------------------------*/
 // Initial LIL9341 LCD driver chip 
@@ -149,127 +395,155 @@ static void ILI9341_Initial(
     mp_hal_delay_ms(40);    // Delay 40ms
 
     /* Initial control registers */
-    LCD_WR_REG(0xCB);
-    LCD_WR_DATA(0x39);
-    LCD_WR_DATA(0x2C);
-    LCD_WR_DATA(0x00);
-    LCD_WR_DATA(0x34);
-    LCD_WR_DATA(0x02);
+    LCD_WR_REG(self, 0xCB);
+    LCD_WR_DATA(self, 0x39);
+    LCD_WR_DATA(self, 0x2C);
+    LCD_WR_DATA(self, 0x00);
+    LCD_WR_DATA(self, 0x34);
+    LCD_WR_DATA(self, 0x02);
 
-    LCD_WR_REG(0xCF);
-    LCD_WR_DATA(0x00);
-    LCD_WR_DATA(0xC1);
-    LCD_WR_DATA(0x30);
+    LCD_WR_REG(self, 0xCF);
+    LCD_WR_DATA(self, 0x00);
+    LCD_WR_DATA(self, 0xC1);
+    LCD_WR_DATA(self, 0x30);
 
-    LCD_WR_REG(0xE8);
-    LCD_WR_DATA(0x85);
-    LCD_WR_DATA(0x00);
-    LCD_WR_DATA(0x78);
+    LCD_WR_REG(self, 0xE8);
+    LCD_WR_DATA(self, 0x85);
+    LCD_WR_DATA(self, 0x00);
+    LCD_WR_DATA(self, 0x78);
 
-    LCD_WR_REG(0xEA);
-    LCD_WR_DATA(0x00);
-    LCD_WR_DATA(0x00);
+    LCD_WR_REG(self, 0xEA);
+    LCD_WR_DATA(self, 0x00);
+    LCD_WR_DATA(self, 0x00);
 
-    LCD_WR_REG(0xED);
-    LCD_WR_DATA(0x64);
-    LCD_WR_DATA(0x03);
-    LCD_WR_DATA(0x12);
-    LCD_WR_DATA(0x81);
+    LCD_WR_REG(self, 0xED);
+    LCD_WR_DATA(self, 0x64);
+    LCD_WR_DATA(self, 0x03);
+    LCD_WR_DATA(self, 0x12);
+    LCD_WR_DATA(self, 0x81);
 
-    LCD_WR_REG(0xF7);
-    LCD_WR_DATA(0x20);
+    LCD_WR_REG(self, 0xF7);
+    LCD_WR_DATA(self, 0x20);
 
-    LCD_WR_REG(0xC0);
-    LCD_WR_DATA(0x23);
+    LCD_WR_REG(self, 0xC0);
+    LCD_WR_DATA(self, 0x23);
 
-    LCD_WR_REG(0xC1);
-    LCD_WR_DATA(0x10);
+    LCD_WR_REG(self, 0xC1);
+    LCD_WR_DATA(self, 0x10);
 
-    LCD_WR_REG(0xC5);
-    LCD_WR_DATA(0x3e);
-    LCD_WR_DATA(0x28);
+    LCD_WR_REG(self, 0xC5);
+    LCD_WR_DATA(self, 0x3e);
+    LCD_WR_DATA(self, 0x28);
 
-    LCD_WR_REG(0xC7);
-    LCD_WR_DATA(0x86);
+    LCD_WR_REG(self, 0xC7);
+    LCD_WR_DATA(self, 0x86);
 
-    LCD_WR_REG(0x36);
+    LCD_WR_REG(self, 0x36);
 
 	if(self->i32Width == 240)
-		LCD_WR_DATA(0x48); // for 240x320
+		LCD_WR_DATA(self, 0x48); // for 240x320
 	else
-		LCD_WR_DATA(0xE8); // for 320x240
+		LCD_WR_DATA(self, 0xE8); // for 320x240
 
-    LCD_WR_REG(0x3A);
-    LCD_WR_DATA(0x55);
+    LCD_WR_REG(self, 0x3A);
+    LCD_WR_DATA(self, 0x55);
         
-    LCD_WR_REG(0xB1);
-    LCD_WR_DATA(0x00);
-    LCD_WR_DATA(0x18);
+    LCD_WR_REG(self, 0xB1);
+    LCD_WR_DATA(self, 0x00);
+    LCD_WR_DATA(self, 0x18);
 
-    LCD_WR_REG(0xB6);
-    LCD_WR_DATA(0x08);
-    LCD_WR_DATA(0x82);
-    LCD_WR_DATA(0x27);
+    LCD_WR_REG(self, 0xB6);
+    LCD_WR_DATA(self, 0x08);
+    LCD_WR_DATA(self, 0x82);
+    LCD_WR_DATA(self, 0x27);
 
-    LCD_WR_REG(0xF2);
-    LCD_WR_DATA(0x00);
+    LCD_WR_REG(self, 0xF2);
+    LCD_WR_DATA(self, 0x00);
 
-    LCD_WR_REG(0x26);
-    LCD_WR_DATA(0x01);
+    LCD_WR_REG(self, 0x26);
+    LCD_WR_DATA(self, 0x01);
 
-    LCD_WR_REG(0xE0);
-    LCD_WR_DATA(0x0F);
-    LCD_WR_DATA(0x31);
-    LCD_WR_DATA(0x2B);
-    LCD_WR_DATA(0x0C);
-    LCD_WR_DATA(0x0E);
-    LCD_WR_DATA(0x08);
-    LCD_WR_DATA(0x4E);
-    LCD_WR_DATA(0xF1);
-    LCD_WR_DATA(0x37);
-    LCD_WR_DATA(0x07);
-    LCD_WR_DATA(0x10);
-    LCD_WR_DATA(0x03);
-    LCD_WR_DATA(0x0E);
-    LCD_WR_DATA(0x09);
-    LCD_WR_DATA(0x00);
+    LCD_WR_REG(self, 0xE0);
+    LCD_WR_DATA(self, 0x0F);
+    LCD_WR_DATA(self, 0x31);
+    LCD_WR_DATA(self, 0x2B);
+    LCD_WR_DATA(self, 0x0C);
+    LCD_WR_DATA(self, 0x0E);
+    LCD_WR_DATA(self, 0x08);
+    LCD_WR_DATA(self, 0x4E);
+    LCD_WR_DATA(self, 0xF1);
+    LCD_WR_DATA(self, 0x37);
+    LCD_WR_DATA(self, 0x07);
+    LCD_WR_DATA(self, 0x10);
+    LCD_WR_DATA(self, 0x03);
+    LCD_WR_DATA(self, 0x0E);
+    LCD_WR_DATA(self, 0x09);
+    LCD_WR_DATA(self, 0x00);
 
-    LCD_WR_REG(0xE1);
-    LCD_WR_DATA(0x00);
-    LCD_WR_DATA(0x0E);
-    LCD_WR_DATA(0x14);
-    LCD_WR_DATA(0x03);
-    LCD_WR_DATA(0x11);
-    LCD_WR_DATA(0x07);
-    LCD_WR_DATA(0x31);
-    LCD_WR_DATA(0xC1);
-    LCD_WR_DATA(0x48);
-    LCD_WR_DATA(0x08);
-    LCD_WR_DATA(0x0F);
-    LCD_WR_DATA(0x0C);
-    LCD_WR_DATA(0x31);
-    LCD_WR_DATA(0x36);
-    LCD_WR_DATA(0x0F);
+    LCD_WR_REG(self, 0xE1);
+    LCD_WR_DATA(self, 0x00);
+    LCD_WR_DATA(self, 0x0E);
+    LCD_WR_DATA(self, 0x14);
+    LCD_WR_DATA(self, 0x03);
+    LCD_WR_DATA(self, 0x11);
+    LCD_WR_DATA(self, 0x07);
+    LCD_WR_DATA(self, 0x31);
+    LCD_WR_DATA(self, 0xC1);
+    LCD_WR_DATA(self, 0x48);
+    LCD_WR_DATA(self, 0x08);
+    LCD_WR_DATA(self, 0x0F);
+    LCD_WR_DATA(self, 0x0C);
+    LCD_WR_DATA(self, 0x31);
+    LCD_WR_DATA(self, 0x36);
+    LCD_WR_DATA(self, 0x0F);
 
-    LCD_WR_REG(0x11);
+    LCD_WR_REG(self, 0x11);
     mp_hal_delay_ms(200);     // Delay 200ms
     
-    LCD_WR_REG(0x29);           //Display on
+    LCD_WR_REG(self, 0x29);           //Display on
 
-    LCD_WR_REG(0x0A);
-    Reg = LCD_RD_DATA();
-    Reg = LCD_RD_DATA();
+#if defined(_ILI9341_USING_EBI_)
+
+    LCD_WR_REG(self, 0x0A);
+    Reg = LCD_EBI_RD_DATA(self);
+    Reg = LCD_EBI_RD_DATA(self);
     printf("0Ah = %02x.\n", Reg);
     
-    LCD_WR_REG(0x0B);
-    Reg = LCD_RD_DATA();
-    Reg = LCD_RD_DATA();
+    LCD_WR_REG(self, 0x0B);
+    Reg = LCD_EBI_RD_DATA(self);
+    Reg = LCD_EBI_RD_DATA(self);
     printf("0Bh = %02x.\n", Reg);
 	
-    LCD_WR_REG(0x0C);
-    Reg = LCD_RD_DATA();
-    Reg = LCD_RD_DATA();
+    LCD_WR_REG(self, 0x0C);
+    Reg = LCD_EBI_RD_DATA(self);
+    Reg = LCD_EBI_RD_DATA(self);
     printf("0Ch = %02x.\n", Reg);
+#else
+#if 1
+	uint16_t u16Data;
+
+
+	u16Data = ILI9341_ReadRegister(self, 0x0A, 1);
+    printf("0Ah = %02x.\n", u16Data);
+
+	u16Data = ILI9341_ReadRegister(self, 0x0B, 1);
+    printf("0Bh = %02x.\n", u16Data);
+
+	u16Data = ILI9341_ReadRegister(self, 0x0C, 1);
+    printf("0Ch = %02x.\n", u16Data);
+
+
+	u16Data = ILI9341_ReadRegister(self, 0xD3, 1);
+    printf("D3h = %02x.\n", u16Data);
+	u16Data = ILI9341_ReadRegister(self, 0xD3, 2);
+    printf("D3h = %02x.\n", u16Data);
+	u16Data = ILI9341_ReadRegister(self, 0xD3, 3);
+    printf("D3h = %02x.\n", u16Data);
+
+#else
+	ILI9341_FillScreeen(self, 0xC0C0);
+#endif
+#endif
 
     printf("Initial ILI9341 LCD Module done.\n\n");
 
@@ -279,6 +553,8 @@ static void ILI9341Driver_Init(
 	ILI9341_obj_t *self
 )
 {
+#if defined(_ILI9341_USING_EBI_)
+
     CLK_EnableModuleClock(EBI_MODULE);
 
     /* Configure DC/RESET/LED pins */
@@ -289,48 +565,19 @@ static void ILI9341Driver_Init(
     EBI->CTL0 |= EBI_CTL0_CACCESS_Msk;
     EBI->TCTL0 |= (EBI_TCTL0_WAHDOFF_Msk | EBI_TCTL0_RAHDOFF_Msk);
 //    printf("\n[EBI CTL0:0x%08X, TCLT0:0x%08X]\n\n", EBI->CTL0, EBI->TCTL0);
-	
+
+#endif
+
+#if defined(_ILI9341_USING_SPI_)
+	SPI_FuncPinInit(self);
+#endif	
     /* Init LCD Module */
     ILI9341_Initial(self);
     
     /* PB.7 BL_CTRL pin */
-    PB7 = 1;
+    ILI9341_BL_PIN = 1;
 }
 
-static void ILI9341Driver_flush(
-	struct _disp_drv_t *psDisp, 
-	const lv_area_t *psArea, 
-	lv_color_t *psColor_p
-)
-{
-	uint16_t data[4];
-
-//	printf("ILI9341Driver_flush %d, %d \n", psArea->x1, psArea->y1);
-	/*Column addresses*/
-	LCD_WR_REG(0x2A);
-	data[0] = (psArea->x1 >> 8) & 0xFF;
-	data[1] = psArea->x1 & 0xFF;
-	data[2] = (psArea->x2 >> 8) & 0xFF;
-	data[3] = psArea->x2 & 0xFF;
-	LcdWriteDataMultiple(data, 4);
-	
-	/*Page addresses*/
-	LCD_WR_REG(0x2B);
-	data[0] = (psArea->y1 >> 8) & 0xFF;
-	data[1] = psArea->y1 & 0xFF;
-	data[2] = (psArea->y2 >> 8) & 0xFF;
-	data[3] = psArea->y2 & 0xFF;
-	LcdWriteDataMultiple(data, 4);
-
-	/*Memory write*/
-	LCD_WR_REG(0x2C);	
-
-	uint32_t u32PixelSize = (psArea->x2 - psArea->x1 + 1) * (psArea->y2 - psArea->y1 + 1);
-
-	LcdWriteDataMultiple((uint16_t *)psColor_p, u32PixelSize);
-	
-	lv_disp_flush_ready(psDisp);
-}
 
 /******************************************************************************/
 /* MicroPython bindings                                                       */
@@ -358,6 +605,57 @@ STATIC mp_obj_t ILI9341_init(
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ILI9341_init_obj, ILI9341_init);
+
+static void ILI9341Driver_flush(
+	struct _disp_drv_t *psDisp, 
+	const lv_area_t *psArea, 
+	lv_color_t *psColor_p
+)
+{
+	uint16_t data[4];
+
+	/*Column addresses*/
+	LCD_WR_REG(&ili9341_obj, 0x2A);
+#if defined(_ILI9341_USING_EBI_)
+	data[0] = (psArea->x1 >> 8) & 0xFF;
+	data[1] = psArea->x1 & 0xFF;
+	data[2] = (psArea->x2 >> 8) & 0xFF;
+	data[3] = psArea->x2 & 0xFF;
+	LcdWriteDataMultiple(&ili9341_obj, data, 4);
+#endif
+#if defined(_ILI9341_USING_SPI_)
+	data[0] = psArea->x1;
+	data[1] = psArea->x2;
+	LcdWriteDataMultiple(&ili9341_obj, &data[0], 1);
+	LcdWriteDataMultiple(&ili9341_obj, &data[1], 1);
+#endif
+
+	/*Page addresses*/
+	LCD_WR_REG(&ili9341_obj, 0x2B);
+#if defined(_ILI9341_USING_EBI_)
+	data[0] = (psArea->y1 >> 8) & 0xFF;
+	data[1] = psArea->y1 & 0xFF;
+	data[2] = (psArea->y2 >> 8) & 0xFF;
+	data[3] = psArea->y2 & 0xFF;
+	LcdWriteDataMultiple(&ili9341_obj, data, 4);
+#endif
+#if defined(_ILI9341_USING_SPI_)
+	data[0] = psArea->y1;
+	data[1] = psArea->y2;
+	LcdWriteDataMultiple(&ili9341_obj, &data[0], 1);
+	LcdWriteDataMultiple(&ili9341_obj, &data[1], 1);
+#endif	
+
+	/*Memory write*/
+	LCD_WR_REG(&ili9341_obj, 0x2C);	
+
+	uint32_t u32PixelSize = (psArea->x2 - psArea->x1 + 1) * (psArea->y2 - psArea->y1 + 1);
+
+	LcdWriteDataMultiple(&ili9341_obj, (uint16_t *)psColor_p, u32PixelSize);
+	
+	lv_disp_flush_ready(psDisp);
+}
+
 
 DEFINE_PTR_OBJ(ILI9341Driver_flush);
 

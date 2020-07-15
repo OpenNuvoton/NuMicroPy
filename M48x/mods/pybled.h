@@ -26,12 +26,6 @@
 #ifndef MICROPY_INCLUDED_M48X_LED_H
 #define MICROPY_INCLUDED_M48X_LED_H
 
-typedef enum {
-    PYB_LED_RED = 0,
-    PYB_LED_YELLOW = 1,
-    PYB_LED_GREEN = 2,
-} pyb_led_t;
-
 extern const mp_obj_type_t pyb_led_type;
 
 #endif // MICROPY_INCLUDED_M48X_LED_H

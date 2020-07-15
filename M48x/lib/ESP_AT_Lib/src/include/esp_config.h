@@ -662,6 +662,14 @@
 #define ESP_CFG_CONN_MANUAL_TCP_RECEIVE     0
 #endif
 
+#ifndef ESP_CFG_UART_FLOW_CONTROL
+#if MICROPY_LVGL
+#define ESP_CFG_UART_FLOW_CONTROL          0
+#else
+#define ESP_CFG_UART_FLOW_CONTROL          1
+#endif
+#endif
+
 /**
  * \defgroup        ESP_CONFIG_STD_LIB Standard library
  * \brief           Standard C library configuration

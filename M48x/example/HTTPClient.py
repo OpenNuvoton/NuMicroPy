@@ -12,7 +12,7 @@ if netif == "LAN":
 	print(lan.ifconfig())
 else:
 	wlan = network.WLAN()
-	wlan.connect("NT_ZY", "12345678")
+	wlan.connect("NT_ZY_BUFFALO", "12345678")
 	print(wlan.ifconfig())
 
 url = 'http://micropython.org/ks/test.html'
