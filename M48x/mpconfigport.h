@@ -85,6 +85,7 @@
 #define MICROPY_STREAMS_POSIX_API   (1)
 #define MICROPY_ENABLE_SCHEDULER    (1)
 #define MICROPY_SCHEDULER_DEPTH     (8)
+#define MICROPY_KBD_EXCEPTION       (1)
 
 // extended modules
 #define MICROPY_PY_UCTYPES          (1)

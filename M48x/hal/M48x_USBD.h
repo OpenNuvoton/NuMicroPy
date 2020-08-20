@@ -36,6 +36,8 @@ typedef struct{
 	int bConnected;
 }S_USBDEV_STATE;
 
+typedef int32_t (*PFN_USBDEV_VCPRecvSignal)(uint8_t *pu8Buf, uint32_t u32Size);
+
 E_USBDEV_MODE USBDEV_GetMode(S_USBDEV_STATE *psUSBDevState);
 
 S_USBDEV_STATE *USBDEV_Init(
@@ -113,6 +115,12 @@ void USBDEV_MSCEnDisable(
 );
 
 int32_t USBDEV_DataBusConnect(void);
+
+
+void USBDEV_VCPRegisterSingal(
+	PFN_USBDEV_VCPRecvSignal pfnSignal
+);
+
 #endif
 
 

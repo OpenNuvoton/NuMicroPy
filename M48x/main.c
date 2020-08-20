@@ -20,6 +20,10 @@
 #include "extmod/vfs.h"
 #include "extmod/vfs_fat.h"
 
+#if MICROPY_KBD_EXCEPTION
+#include "lib/utils/interrupt_char.h" 
+#endif
+
 #include "NuMicro.h"
 
 #include "mpconfigboard_common.h"
@@ -69,6 +73,11 @@ void SYS_Init(void)
 #if ENABLE_SPIM
     /* Enable SPIM module clock */
     CLK_EnableModuleClock(SPIM_MODULE);
+#endif
+
+#if MICROPY_HW_ENABLE_RNG
+    /* Enable CRYPTO module clock */
+    CLK_EnableModuleClock(CRPT_MODULE);
 #endif
 
     /* Update System Core Clock */
@@ -359,6 +368,23 @@ STATIC StackType_t mp_usbtask_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8
 STATIC char mp_task_heap[MP_TASK_HEAP_SIZE]__attribute__((aligned (8)));
 STATIC volatile bool mp_USBRun;
 
+#if MICROPY_KBD_EXCEPTION
+
+static int32_t VCPRecvSignalCB(
+	uint8_t *pu8Buf, 
+	uint32_t u32Size
+)
+{
+	if(mp_interrupt_char != -1){
+		if(pu8Buf[0] == mp_interrupt_char){
+			mp_keyboard_interrupt();
+		}
+		return 0;
+	}
+	return 1;
+}
+
+#endif
 
 static void ExecuteUsbMSC(void){
 	S_USBDEV_STATE *psUSBDev_msc_state = NULL;
@@ -383,6 +409,10 @@ static void ExecuteUsbMSC(void){
 		}
 
 		if(USBDEV_DataBusConnect()){
+
+#if MICROPY_KBD_EXCEPTION
+			USBDEV_VCPRegisterSingal(VCPRecvSignalCB);
+#endif
 			while(USBD_IS_ATTACHED() && (mp_USBRun == true))
 			{
 				MSCTrans_ProcessCmd();
@@ -589,10 +619,6 @@ int main (void)
 
 #if MICROPY_HW_HAS_SDCARD
 	sdcard_init();
-#endif
-
-#if MICROPY_HW_ENABLE_RNG
-	PRNG_Open(CRPT, PRNG_KEY_SIZE_64, 1, 0xAA);     // start PRNG with seed 0x55
 #endif
 
 #if ENABLE_SPIM

@@ -253,6 +253,7 @@ int mp_hal_stdin_rx_chr(void) {
         } else if (c == '\n') {
             c = '\r';
         }
+
         return c;
 #if MICROPY_PY_OS_DUPTERM
     }

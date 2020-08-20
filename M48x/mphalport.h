@@ -9,7 +9,11 @@ typedef enum
 
 NORETURN void mp_hal_raise(HAL_StatusTypeDef status);
 
+#if MICROPY_KBD_EXCEPTION
+#include "lib/utils/interrupt_char.h"
+#else
 static inline void mp_hal_set_interrupt_char(char c) {}
+#endif
 
 #define mp_hal_delay_us_fast(us) mp_hal_delay_us(us)
 

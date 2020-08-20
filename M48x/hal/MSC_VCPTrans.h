@@ -154,6 +154,10 @@ int32_t VCPTrans_BulkOutRecv(
 	uint32_t u32DataBufLen
 );
 
+void VCPTrans_RegisterSingal(
+	PFN_USBDEV_VCPRecvSignal pfnSignal
+);
+
 
 /******************************************************************************/
 /*                USBD Mass Storage Structure                                 */

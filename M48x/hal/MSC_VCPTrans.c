@@ -13,12 +13,11 @@
 #include <string.h>
 
 #include "NuMicro.h"
+#include "M48x_USBD.h"
 #include "MSC_VCPTrans.h"
 #include "StorIF.h"
 
 #include "mpconfigboard_common.h"
-
-
 
 //EP2 for VCP bulk in and address  0x2
 //EP3 for VCP bulk out and address 0x3
@@ -61,6 +60,7 @@ static uint32_t Storage_Block[STORAGE_BUFFER_SIZE / 4];
 #define DEF_MAX_LUN 4
 
 static S_STORIF_IF *s_apsLUNStorIf[DEF_MAX_LUN];
+static PFN_USBDEV_VCPRecvSignal s_pfnVCPRecvSignel = NULL;
 
 #define MassCMD_BUF        ((uint32_t)&MassBlock[0])
 #define STORAGE_DATA_BUF   ((uint32_t)&Storage_Block[0])
@@ -226,6 +226,15 @@ static uint8_t s_au8VCPRecvBuf[MAX_VCP_RECV_BUF_LEN];
 static volatile uint32_t s_u32VCPRecvBufIn = 0;
 static volatile uint32_t s_u32VCPRecvBufOut = 0;
 
+extern int mp_interrupt_char;
+
+void VCPTrans_RegisterSingal(
+	PFN_USBDEV_VCPRecvSignal pfnSignal
+)
+{
+	s_pfnVCPRecvSignel = pfnSignal;
+}
+
 int32_t VCPTrans_BulkOutHandler(
 	uint8_t *pu8EPBuf, 
 	uint32_t u32Size
@@ -250,6 +259,13 @@ int32_t VCPTrans_BulkOutHandler(
 		return 0;
 	}
 
+	if(s_pfnVCPRecvSignel){
+		if(s_pfnVCPRecvSignel(pu8EPBuf, u32Size) == 0){
+			USBD_SET_PAYLOAD_LEN(EP3, EP3_VCP_MAX_PKT_SIZE);
+			return 0;
+		}
+	}
+
 	if(u32LimitLen < u32Size){
 		USBD_MemCopy(s_au8VCPRecvBuf + u32NewInIdx, pu8EPBuf, u32LimitLen);		
 		USBD_MemCopy(s_au8VCPRecvBuf, pu8EPBuf + u32LimitLen, u32Size - u32LimitLen);
@@ -257,6 +273,7 @@ int32_t VCPTrans_BulkOutHandler(
 	else{
 		USBD_MemCopy(s_au8VCPRecvBuf + u32NewInIdx, pu8EPBuf, u32Size);
 	}
+
 	
 	u32NewInIdx = (u32NewInIdx + u32Size) % MAX_VCP_RECV_BUF_LEN;
 	s_u32VCPRecvBufIn = u32NewInIdx;

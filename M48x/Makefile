@@ -126,6 +126,7 @@ SRC_LIB_C = $(addprefix lib/,\
 	timeutils/timeutils.c \
 	netutils/netutils.c \
 	utils/sys_stdio_mphal.c \
+	utils/interrupt_char.c \
 	)
 
 SRC_DRIVER_C = $(addprefix drivers/,\

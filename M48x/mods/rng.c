@@ -41,6 +41,8 @@
 uint32_t rng_get(void) {
     uint32_t    au32PrngData[8];
 
+	PRNG_Open(CRPT, PRNG_KEY_SIZE_64, 1, mp_hal_ticks_ms());     // start PRNG with seed (tick)
+
     // Enable the RNG peripheral if it's not already enabled
 	PRNG_Start(CRPT);
     // Wait for a new random number to be ready, takes on the order of 10us

@@ -566,6 +566,13 @@ void Handle_USBDEV_Irq(
 	}
 }
 
+void USBDEV_VCPRegisterSingal(
+	PFN_USBDEV_VCPRecvSignal pfnSignal
+)
+{
+	VCPTrans_RegisterSingal(pfnSignal);
+}
+
 
 
 
