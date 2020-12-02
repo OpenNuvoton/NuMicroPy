@@ -10,3 +10,6 @@
 [submodule "ThirdParty/lv_binding_micropython"]
 	path = ThirdParty/lv_binding_micropython
 	url = https://github.com/littlevgl/lv_binding_micropython.git
+[submodule "N9H26_emWin_NonOS"]
+	path = N9H26_emWin_NonOS
+	url = https://github.com/OpenNuvoton/N9H26_emWin_NonOS.git

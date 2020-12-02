@@ -100,9 +100,6 @@ SLED_DataWriteIDLE(
 static void spi_led_pdma_handler(spi_t *obj){
 	obj->event = SPI_EVENT_COMPLETE;
 
-    SPI_ClearRxFIFO(obj->spi);
-    SPI_ClearTxFIFO(obj->spi);
-
 	SPI_DISABLE_RX_PDMA(obj->spi);
 	SPI_DISABLE_TX_PDMA(obj->spi);
 }
@@ -143,12 +140,13 @@ SLED_DataWriteTrigger(
 
 	// check event flag for complete
 	while(self->sSPIObj.event == 0){
-		mp_hal_delay_ms(1);
+		mp_hal_delay_us(1);
 	}
 
+	mp_hal_delay_us(100);
 	SPI_Final(&self->sSPIObj);
 	SLED_DataWriteIDLE(self);
-	mp_hal_delay_ms(1);
+	mp_hal_delay_us(50);
 }
 
 

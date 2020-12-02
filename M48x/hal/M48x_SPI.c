@@ -131,11 +131,11 @@ static void spi_format(spi_t *obj, int bits, int mode, int slave, int msb_first,
 
     SPI_DISABLE_SYNC(spi_base);
     
-	printf("bits: %d \n", bits);
-	printf("mode: %d \n", mode);
-	printf("slave: %d \n", slave);
-	printf("msb_first: %d \n", msb_first);
-	printf("direction: %d \n", direction);
+//	printf("bits: %d \n", bits);
+//	printf("mode: %d \n", mode);
+//	printf("slave: %d \n", slave);
+//	printf("msb_first: %d \n", msb_first);
+//	printf("direction: %d \n", direction);
 
     SPI_Open(spi_base,
              slave ? SPI_SLAVE : SPI_MASTER,
@@ -771,47 +771,35 @@ static void spi_abort_asynch(spi_t *obj)
 {
     SPI_T *spi_base = (SPI_T *) obj->spi;
     PDMA_T *pdma_base = dma_modbase();
-	printf("spi_abort_asynch 0 \n");
     if (obj->dma_usage != DMA_USAGE_NEVER) {
         // Receive FIFO Overrun in case of tx length > rx length on DMA way
         if (spi_base->STATUS & SPI_STATUS_RXOVIF_Msk) {
             spi_base->STATUS = SPI_STATUS_RXOVIF_Msk;
         }
 
-	printf("spi_abort_asynch 1 \n");
         if (obj->dma_chn_id_tx != DMA_ERROR_OUT_OF_CHANNELS) {
-	printf("spi_abort_asynch 2 \n");
             PDMA_DisableInt(pdma_base, obj->dma_chn_id_tx, PDMA_INT_TRANS_DONE);
             // NOTE: On NUC472, next PDMA transfer will fail with PDMA_STOP() called. Cause is unknown.
             pdma_base->CHCTL &= ~(1 << obj->dma_chn_id_tx);
         }
-	printf("spi_abort_asynch 3 \n");
         SPI_DISABLE_TX_PDMA(((SPI_T *) obj->spi));
 
         if (obj->dma_chn_id_rx != DMA_ERROR_OUT_OF_CHANNELS) {
-	printf("spi_abort_asynch 4 \n");
             PDMA_DisableInt(pdma_base, obj->dma_chn_id_rx, PDMA_INT_TRANS_DONE);
             // NOTE: On NUC472, next PDMA transfer will fail with PDMA_STOP() called. Cause is unknown.
             pdma_base->CHCTL &= ~(1 << obj->dma_chn_id_rx);
         }
-	printf("spi_abort_asynch 5 \n");
         SPI_DISABLE_RX_PDMA(((SPI_T *) obj->spi));
     }
 
     // Necessary for both interrupt way and DMA way
-	printf("spi_abort_asynch 6 \n");
     spi_enable_vector_interrupt(obj, 0, 0);
-	printf("spi_abort_asynch 7 \n");
     spi_master_enable_interrupt(obj, 0);
-	printf("spi_abort_asynch 8 \n");
 
     /* Necessary for accessing FIFOCTL below */
-	printf("spi_abort_asynch 9 \n");
     SPI_DISABLE_SYNC(spi_base);
 
-	printf("spi_abort_asynch 10 \n");
     SPI_ClearRxFIFO(spi_base);
-	printf("spi_abort_asynch 11 \n");
     SPI_ClearTxFIFO(spi_base);
 }
 
@@ -920,7 +908,6 @@ static uint32_t spi_event_check(spi_t *obj)
     }
 
     if (spi_is_tx_complete(obj) && spi_is_rx_complete(obj)) {
-		printf("spi_event_check complete \n");
         event |= SPI_EVENT_COMPLETE;
     }
 
@@ -1108,7 +1095,7 @@ static void spi_dma_handler_tx(uint32_t id, uint32_t event_dma)
     // Expect SPI IRQ will catch this transfer done event
     if (event_dma & DMA_EVENT_TRANSFER_DONE) {
         obj->tx_buff.pos = obj->tx_buff.length;
-		printf("spi_dma_handler_tx 1 \n");
+//		printf("spi_dma_handler_tx 1 \n");
     }
     // TODO: Pass this error to caller
     if (event_dma & DMA_EVENT_TIMEOUT) {
@@ -1129,7 +1116,6 @@ static void spi_dma_handler_tx(uint32_t id, uint32_t event_dma)
 #else
     if (obj && obj->hdlr_async) {
        void (*hdlr_async)(spi_t *) = (void(*)(spi_t *))(obj->hdlr_async);
-		printf("spi_dma_handler_tx 3 \n");
        hdlr_async(obj);
     }
 #endif
@@ -1147,7 +1133,6 @@ static void spi_dma_handler_rx(uint32_t id, uint32_t event_dma)
     // Expect SPI IRQ will catch this transfer done event
     if (event_dma & DMA_EVENT_TRANSFER_DONE) {
         obj->rx_buff.pos = obj->rx_buff.length;
-		printf("spi_dma_handler_rx 1 \n");
     }
     // TODO: Pass this error to caller
     if (event_dma & DMA_EVENT_TIMEOUT) {
@@ -1168,7 +1153,6 @@ static void spi_dma_handler_rx(uint32_t id, uint32_t event_dma)
 #else
     if (obj && obj->hdlr_async) {
         void (*hdlr_async)(spi_t *) = (void(*)(spi_t *))(obj->hdlr_async);
-		printf("spi_dma_handler_rx 3 \n");
         hdlr_async(obj);
     }
 
