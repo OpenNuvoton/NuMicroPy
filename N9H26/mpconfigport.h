@@ -174,9 +174,10 @@ extern const struct _mp_obj_module_t mp_module_usocket;
 extern const struct _mp_obj_module_t mp_module_utime;
 extern const struct _mp_obj_module_t mp_module_uos;
 
+extern const struct _mp_obj_module_t mp_module_VPOST;
+
 //littlevgl modules
 extern const struct _mp_obj_module_t mp_module_lvgl;
-extern const struct _mp_obj_module_t mp_module_ILI9341;
 extern const struct _mp_obj_module_t mp_module_TouchADC;
 
 
@@ -192,20 +193,33 @@ extern const struct _mp_obj_module_t mp_module_TouchADC;
 #include "lvgl/src/lv_misc/lv_gc.h"
 
 #define MICROPY_PY_LVGL_DEF \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_lvgl), (mp_obj_t)&mp_module_lvgl }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_ILI9341), (mp_obj_t)&mp_module_ILI9341 }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_TouchADC), (mp_obj_t)&mp_module_TouchADC },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_lvgl), (mp_obj_t)&mp_module_lvgl },
 #else
 #define LV_ROOTS 
 #define MICROPY_PY_LVGL_DEF 
 #endif
 
+#if MICROPY_HW_ENABLE_VPOST
+#define VPOST_BUILTIN_MODULE \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_VPOST), (mp_obj_t)&mp_module_VPOST },
+#else
+#define VPOST_BUILTIN_MODULE
+#endif
+
+#if MICROPY_HW_ENABLE_TOUCHADC
+#define TOUCHADC_BUILTIN_MODULE \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_TOUCHADC), (mp_obj_t)&mp_module_TouchADC },
+#else
+#define TOUCHADC_BUILTIN_MODULE
+#endif
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_umachine), (mp_obj_t)&machine_module }, \
     { MP_ROM_QSTR(MP_QSTR_pyb), MP_ROM_PTR(&pyb_module) }, \
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
     { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
+	VPOST_BUILTIN_MODULE \
+	TOUCHADC_BUILTIN_MODULE \
     NETWORK_BUILTIN_MODULE \
     MICROPY_PY_LVGL_DEF \
 
@@ -239,20 +253,14 @@ extern const struct _mp_obj_module_t mp_module_TouchADC;
 
 #define MP_STATE_PORT MP_STATE_VM
 
-/* //CHChen: TODO
-#define MICROPY_PORT_ROOT_POINTERS \
-    LV_ROOTS \
-    void *mp_lv_user_data; \
-    \
-	
-*/
-
 #define MICROPY_PORT_ROOT_POINTERS \
     const char *readline_hist[8]; \
     mp_obj_t pin_class_mapper; \
     mp_obj_t pin_class_map_dict; \
     mp_obj_t pyb_extint_callback[PYB_EXTI_NUM_VECTORS]; \
     mp_obj_list_t mod_network_nic_list; \
+    LV_ROOTS \
+    void *mp_lv_user_data; \
 
 #if 0 //CHChen: TODO
 

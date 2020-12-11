@@ -75,7 +75,6 @@ typedef struct{
 	PFN_STORIF_GET_INFO			pfnGetInfo;
 }S_STORIF_IF;
 
-extern const S_STORIF_IF g_STORIF_sFlash;
 extern const S_STORIF_IF g_STORIF_sSPIFlash;
 extern const S_STORIF_IF g_STORIF_sSDCard;
 

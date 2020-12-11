@@ -21,20 +21,12 @@
         REG_AIC_SSCR    = 0xB800012C  /* AIC clear Interrupt Mask */
         REG_DRAM_SIZE   = 0xB0003010  /* DRAM¡@Size */
 
-/*        UND_Stack_Size = 0x00000100 */
-/*        ABT_Stack_Size = 0x00000100 */
-/*        FIQ_Stack_Size = 0x00000200 */
-/*        SVC_Stack_Size = 0x00000C00 */
-/*        IRQ_Stack_Size = 0x00001000 */
-/*        USR_Stack_Size = 0x00001000 */
-
-
         UND_Stack_Size = 0x00000100
         ABT_Stack_Size = 0x00000100
-        FIQ_Stack_Size = 0x00008000
-        SVC_Stack_Size = 0x00008000
-        IRQ_Stack_Size = 0x00008000
-        USR_Stack_Size = 0x00008000
+        FIQ_Stack_Size = 0x00001000
+        SVC_Stack_Size = 0x00001000
+        IRQ_Stack_Size = 0x00001000
+        USR_Stack_Size = 0x00001000
 
 /*********************************************************************
 *

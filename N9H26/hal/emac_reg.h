@@ -811,8 +811,9 @@ typedef struct
 /**@}*/ /* end of EMAC register group */
 /**@}*/ /* end of REGISTER group */
 
-#define EMAC                 ((EMAC_T *)  EMAC_BA)
+//#define EMAC                 ((EMAC_T *)  EMAC_BA)
 
+EMAC_T *EMAC = ((EMAC_T *)  EMAC_BA);
 #if defined ( __CC_ARM   )
 #pragma no_anon_unions
 #endif

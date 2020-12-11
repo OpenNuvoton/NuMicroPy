@@ -72,12 +72,12 @@
 #define ADVERTISE_LPACK         0x4000  /* Ack link partners response  */
 #define ADVERTISE_NPAGE         0x8000  /* Next page bit               */
 
-#define RX_DESCRIPTOR_NUM 4    // Max Number of Rx Frame Descriptors
-#define TX_DESCRIPTOR_NUM 4    // Max number of Tx Frame Descriptors
+#define RX_DESCRIPTOR_NUM 32    // Max Number of Rx Frame Descriptors
+#define TX_DESCRIPTOR_NUM 16    // Max number of Tx Frame Descriptors
 
-#define PACKET_BUFFER_SIZE  1520
+#define PACKET_BUFFER_SIZE  0x600
 
-#define CONFIG_PHY_ADDR     1
+#define CONFIG_PHY_ADDR     0
 
 
 // Frame Descriptor's Owner bit

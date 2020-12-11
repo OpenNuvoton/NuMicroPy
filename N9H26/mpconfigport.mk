@@ -5,3 +5,6 @@ MICROPY_PY_THREAD = 1
 
 # enable LWIP for ethernet build
 MICROPY_NVT_LWIP = 1
+
+#LittlevGL binding
+MICROPY_LVGL = 1

@@ -5,3 +5,9 @@
 
 //RTC
 #define MICROPY_HW_ENABLE_RTC       (1)
+
+//VPOST
+#define MICROPY_HW_ENABLE_VPOST     (1)
+
+//Touch ADC
+#define MICROPY_HW_ENABLE_TOUCHADC	(1)

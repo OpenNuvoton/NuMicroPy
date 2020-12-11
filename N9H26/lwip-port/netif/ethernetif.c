@@ -336,7 +336,7 @@ ethernetif_init(struct netif *netif)
 
 #if LWIP_NETIF_HOSTNAME
     /* Initialize interface hostname */
-    netif->hostname = "m480";
+    netif->hostname = "n9h26";
 #endif /* LWIP_NETIF_HOSTNAME */
 
     /*

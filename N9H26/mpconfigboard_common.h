@@ -64,7 +64,7 @@
 
 // Whether to enable the SD card interface, exposed as pyb.SDCard
 #ifndef MICROPY_HW_HAS_SDCARD
-#define MICROPY_HW_HAS_SDCARD (0)
+#define MICROPY_HW_HAS_SDCARD (1)
 #endif
 
 

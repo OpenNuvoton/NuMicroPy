@@ -450,6 +450,13 @@ static void MSCVCPTrans_ClassReqDataIn(void)
 				u8MaxLUN ++;
 			}				
 #endif
+
+#if MICROPY_HW_HAS_SDCARD		
+			if(u8MaxLUN < DEF_MAX_LUN){
+				s_apsLUNStorIf[u8MaxLUN] = (S_STORIF_IF *)&g_STORIF_sSDCard;
+				u8MaxLUN ++;
+			}				
+#endif
 			
 			s_i32MSCMaxLun = u8MaxLUN;
 			s_i32MSCConnectCheck = s_i32MSCMaxLun * 3;

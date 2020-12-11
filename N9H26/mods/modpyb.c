@@ -35,6 +35,7 @@
 #include "pybrtc.h"
 #include "pybirq.h"
 #include "pybpin.h"
+#include "pybsdcard.h"
 
 
 /// \function elapsed_millis(start)
@@ -97,12 +98,12 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
 	// Pin
 	{ MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&pin_type) },
 
-/*
 
 #if MICROPY_HW_HAS_SDCARD
 	{ MP_ROM_QSTR(MP_QSTR_SDCard), MP_ROM_PTR(&pyb_sdcard_type) },
 #endif
 
+/*
 	{ MP_ROM_QSTR(MP_QSTR_Timer), MP_ROM_PTR(&pyb_timer_type) },
 	{ MP_ROM_QSTR(MP_QSTR_PWM), MP_ROM_PTR(&pyb_pwm_type) },
 	{ MP_ROM_QSTR(MP_QSTR_WDT), MP_ROM_PTR(&pyb_wdt_type) },

@@ -66,6 +66,13 @@ MapSPIFlash(
 			psInfo->u32TotalBlockN = 512;
 			psInfo->u32PageSize = 256;
 		break;		
+		case 0xEF4018:			//W25Q128 (16MB)
+			psInfo->i32ID = i32FlashID;
+			psInfo->u32BlockSize = 	64 * 1024;
+			psInfo->u32SectorSize = 4 * 1024;
+			psInfo->u32TotalBlockN = 256;
+			psInfo->u32PageSize = 256;
+		break;		
 		default:{
 			printf("Unknown SPI flash. JEDEC ID:%x \n", (unsigned int)i32FlashID);
 			//psInfo->i32ID = i32FlashID;
