@@ -38,62 +38,6 @@ static FMI_SD_INFO_T *s_psSDInfo = NULL;
 #define Sector_Size 512   //512 bytes
 static uint32_t Tmp_Buffer[Sector_Size];
 
-static E_STORIF_ERRNO
-StorIF_SDCard_Init(
-	int32_t i32Inst,
-	void **ppStorRes
-)
-{
-	int i32SectorNum = 0;
-	
-#if MICROPY_PY_THREAD
-	s_tStorIfMutex = xSemaphoreCreateMutex();
-
-	if(s_tStorIfMutex == NULL){
-		printf("Unable create SD card mutex\n");
-		return eSTORIF_ERRNO_NULL_PTR;
-	}
-	
-	xSemaphoreTake(s_tStorIfMutex, portMAX_DELAY);
-#endif
-
-	//--- Initial system clock for SD
-	sicIoctl(SIC_SET_CLOCK, sysGetPLLOutputHz(eSYS_UPLL, sysGetExternalClock())/1000, 0, 0);    // clock from PLL
-
-	//--- Enable AHB clock for SIC/SD/NAND, interrupt ISR, DMA, and FMI engineer
-	sicOpen();
-
-	STORIF_MUTEX_LOCK();
-	
-	if(i32Inst == 0){
-		i32SectorNum = sicSdOpen0();
-		s_psSDInfo = pSD0;
-	}
-	else if (i32Inst == 1){
-		i32SectorNum = sicSdOpen1();
-		s_psSDInfo = pSD1;
-	}
-	else if (i32Inst == 2){
-		i32SectorNum = sicSdOpen2();
-		s_psSDInfo = pSD2;
-	}
-
-	STORIF_MUTEX_UNLOCK();
-
-	if(i32SectorNum <= 0)
-		return eSTORIF_ERRNO_STOR_OPEN;
-
-	return eSTORIF_ERRNO_NONE;
-}
-
-static int32_t
-StorIF_SDCard_Detect(
-	void *pvStorRes
-)
-{
-	return(s_psSDInfo->bIsCardInsert);
-}
-
 /* DISK_DATA_T is defined at BSP source internal, copy it in here*/
 #define STOR_STRING_LEN 32
 
@@ -110,9 +54,102 @@ typedef struct disk_data_t
     char          serial[STOR_STRING_LEN];
 } DISK_DATA_T;
 
-VOID fmiGet_SD_info(FMI_SD_INFO_T *pSD, DISK_DATA_T *_info);
+extern VOID fmiGet_SD_info(FMI_SD_INFO_T *pSD, DISK_DATA_T *_info);
 
 static DISK_DATA_T s_sDiskInfo;
+
+static void ReadDiskInfo(void)
+{
+	if(s_psSDInfo == NULL)
+		return;
+
+	// get information about SD card
+	fmiGet_SD_info(s_psSDInfo, &s_sDiskInfo);
+}
+
+static void SD0_CardInsertISR()
+{
+	uint32_t u32Result;
+	
+	u32Result = sicSdOpen0();
+	if(u32Result < FMI_ERR_ID){
+		s_psSDInfo = pSD0;
+		ReadDiskInfo();
+	}
+}
+
+static void SD0_CardRemoveISR()
+{
+	sicSdClose0();
+	s_psSDInfo = NULL;
+	memset(&s_sDiskInfo, 0, sizeof(DISK_DATA_T));
+}
+
+
+static E_STORIF_ERRNO
+StorIF_SDCard_Init(
+	int32_t i32Inst,
+	void **ppStorRes
+)
+{
+	int i32SectorNum = 0;
+	
+#if MICROPY_PY_THREAD
+	s_tStorIfMutex = xSemaphoreCreateMutex();
+
+	if(s_tStorIfMutex == NULL){
+		printf("Unable create SD card mutex\n");
+		return eSTORIF_ERRNO_NULL_PTR;
+	}
+	
+#endif
+
+	//--- Initial system clock for SD
+	sicIoctl(SIC_SET_CLOCK, sysGetPLLOutputHz(eSYS_UPLL, sysGetExternalClock())/1000, 0, 0);    // clock from PLL
+
+	//--- Enable AHB clock for SIC/SD/NAND, interrupt ISR, DMA, and FMI engineer
+	sicOpen();
+
+	STORIF_MUTEX_LOCK();
+
+	sicIoctl(SIC_SET_CALLBACK, FMI_SD_CARD, (INT32)SD0_CardRemoveISR, (INT32)SD0_CardInsertISR);
+	sicIoctl(SIC_SET_CARD_DETECT, TRUE, 0, 0);
+	
+	if(i32Inst == 0){
+		i32SectorNum = sicSdOpen0();
+		s_psSDInfo = pSD0;
+	}
+	else if (i32Inst == 1){
+		i32SectorNum = sicSdOpen1();
+		s_psSDInfo = pSD1;
+	}
+	else if (i32Inst == 2){
+		i32SectorNum = sicSdOpen2();
+		s_psSDInfo = pSD2;
+	}
+
+	memset(&s_sDiskInfo, 0, sizeof(DISK_DATA_T));
+
+	STORIF_MUTEX_UNLOCK();
+
+	if(i32SectorNum <= 0){
+		return eSTORIF_ERRNO_STOR_OPEN;
+	}
+
+	ReadDiskInfo();
+	return eSTORIF_ERRNO_NONE;
+}
+
+static int32_t
+StorIF_SDCard_Detect(
+	void *pvStorRes
+)
+{
+	if(s_psSDInfo == NULL)
+		return 0;
+
+	return(s_psSDInfo->bIsCardInsert);
+}
 
 static E_STORIF_ERRNO
 StorIF_SDCard_GetInfo(
@@ -120,18 +157,18 @@ StorIF_SDCard_GetInfo(
 	void *pvStorRes
 )
 {
-
-	if(!StorIF_SDCard_Detect(pvStorRes)){
+	if(StorIF_SDCard_Detect(pvStorRes) == false)
 		return eSTORIF_ERRNO_NOT_READY;
-	}
-		
-	// get information about SD card
-	fmiGet_SD_info(s_psSDInfo, &s_sDiskInfo);
-	
+			
 	psInfo->u32TotalSector = s_sDiskInfo.totalSectorN; 
 	psInfo->u32DiskSize = s_sDiskInfo.diskSize;
 	psInfo->u32SectorSize = s_sDiskInfo.sectorSize;
 	psInfo->u32SubType = s_psSDInfo->uCardType;
+
+//	printf("psInfo->u32TotalSector %d \n", psInfo->u32TotalSector);
+//	printf("psInfo->u32DiskSize %d \n", psInfo->u32DiskSize);
+//	printf("psInfo->u32SectorSize %d \n", psInfo->u32SectorSize);
+//	printf("psInfo->u32SubType %d \n", psInfo->u32SubType);
 
 	return eSTORIF_ERRNO_NONE;
 }
@@ -192,12 +229,15 @@ static int32_t SDCard_Read (
     }
     else
     {
-		if(s_psSDInfo == pSD0)
+		if(s_psSDInfo == pSD0){
 			ret = sicSdRead0(sector, count, (INT32)(buff));
-		else if(s_psSDInfo == pSD1)
+		}
+		else if(s_psSDInfo == pSD1){
 			ret = sicSdRead1(sector, count, (INT32)(buff));
-		else if(s_psSDInfo == pSD2)
+		}
+		else if(s_psSDInfo == pSD2){
 			ret = sicSdRead2(sector, count, (INT32)(buff));
+		}
     }
 
     return ret;
@@ -211,10 +251,9 @@ StorIF_SDCard_ReadSector(
 	void *pvStorRes
 )
 {
-	S_STORIF_INFO sStorInfo;
 	int32_t i32Ret;
 	
-	if(StorIF_SDCard_GetInfo(pvStorRes, &sStorInfo) != eSTORIF_ERRNO_NONE)
+	if(!StorIF_SDCard_Detect(pvStorRes))
 		return 0;
 
 	STORIF_MUTEX_LOCK();
@@ -302,10 +341,9 @@ StorIF_SDCard_WriteSector(
 	void *pvStorRes
 )
 {
-	S_STORIF_INFO sStorInfo;
 	int32_t i32Ret;
 
-	if(StorIF_SDCard_GetInfo(pvStorRes, &sStorInfo) != eSTORIF_ERRNO_NONE)
+	if(!StorIF_SDCard_Detect(pvStorRes))
 		return 0;
 
 	STORIF_MUTEX_LOCK();

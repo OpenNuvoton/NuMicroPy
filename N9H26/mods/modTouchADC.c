@@ -134,7 +134,7 @@ Read_CalibrateFile(void)
 {
 	FATFS *psFAT = NULL;
 	FRESULT i32Res;
-	char *szFilePath = "/flash/TouchCalibrate";
+	char *szFilePath = "/spiflash/TouchCalibrate";
 	
 	psFAT = lookup_path((const char **)&szFilePath);
 	if(psFAT == NULL){
@@ -167,7 +167,7 @@ Write_CalibrateFile(void)
 {
 	FATFS *psFAT = NULL;
 	FRESULT i32Res;
-	char *szFilePath = "/flash/TouchCalibrate";
+	char *szFilePath = "/spiflash/TouchCalibrate";
 	
 	psFAT = lookup_path((const char **)&szFilePath);
 	if(psFAT == NULL)
@@ -210,6 +210,7 @@ static int perform_calibration(calibration *cal)
         y2 += (float)(cal->y[j]*cal->y[j]);
         xy += (float)(cal->x[j]*cal->y[j]);
     }
+
 // Get determinant of matrix -- check if determinant is too small
     det = n*(x2*y2 - xy*xy) + x*(xy*y - x*y2) + y*(x*xy - y*x2);
     if(det < 0.1f && det > -0.1f)
@@ -244,6 +245,7 @@ static int perform_calibration(calibration *cal)
               (b*z + e*zx + f*zy),
               (c*z + f*zx + i*zy));
 #endif
+
 // Get sums for y calibration
     z = zx = zy = 0;
     for(j=0; j<5; j++)
@@ -343,7 +345,6 @@ static void get_avr_value(lv_point_t * p)
 	p->x = x_sum / TOUCH_NUMBER;
 	p->y = y_sum / TOUCH_NUMBER;
 }
-
 
 static void btn_event_cb(lv_obj_t * scr, lv_event_t event)
 {
@@ -535,12 +536,11 @@ static void btn_event_cb(lv_obj_t * scr, lv_event_t event)
 		 * TODO Process 'p' points here to calibrate the touch pad
 		 * Offset will be: CIRCLE_SIZE/2 + CIRCLE_OFFSET
 		 */
+
 		int i;
 		if (perform_calibration (&cal))
 		{
-			printf ("Calibration constants: ");
-			for (i = 0; i < 7; i++) printf("%d ", cal.a [i]);
-			printf("\n");
+			printf("Calibration success\n");
 		}
 		else
 		{
@@ -556,6 +556,10 @@ static void btn_event_cb(lv_obj_t * scr, lv_event_t event)
 		final_cal.a[5] = cal.a[3];
 		final_cal.a[6] = cal.a[6];
 
+		printf ("Calibration constants: ");
+		for (i = 0; i < 7; i++) printf("%d ", final_cal.a[i]);
+		printf ("\n");
+	
 		s_calibrate_state = TP_CAL_STATE_READY;
 
     } else if(s_calibrate_state == TP_CAL_STATE_READY) {
@@ -602,7 +606,6 @@ Touch_Calibrate_Create(void)
     lv_obj_set_pos(s_label_main, (hres - lv_obj_get_width(s_label_main)) / 2,
                    (vres - lv_obj_get_height(s_label_main)) / 2);
 
-
     static lv_style_t style_circ;
     lv_style_copy(&style_circ, &lv_style_pretty_color);
     style_circ.body.radius = LV_RADIUS_CIRCLE;
@@ -630,7 +633,7 @@ static bool TouchDriver_Read(
 	static uint16_t s_u16Y = 0;
 	uint16_t u16X;
 	uint16_t u16Y;
-		
+		 
 	if(ReadTouchPanel(&u16X, &u16Y) == false){
 		psIndevData->state = LV_INDEV_STATE_REL;
 		psIndevData->point.x = s_u16X;
@@ -677,12 +680,12 @@ STATIC mp_obj_t TouchADC_init(
 		TouchDriver_Init();
 		
 		//Set default calibrate value
-		final_cal.a[0] = 6677;
-		final_cal.a[1] = -986;
-		final_cal.a[2] = -3173776;
-		final_cal.a[3] = -151;
-		final_cal.a[4] = 4643;
-		final_cal.a[5] = -2143028;
+		final_cal.a[0] = 6963;
+		final_cal.a[1] = 212;
+		final_cal.a[2] = -6076720;
+		final_cal.a[3] = -289;
+		final_cal.a[4] = -5031;
+		final_cal.a[5] = 19804884;
 		final_cal.a[6] = 65536;
 
 		self->initialized = true;

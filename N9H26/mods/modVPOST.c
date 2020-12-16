@@ -70,8 +70,8 @@ STATIC const mp_ptr_t PTR_OBJ(ptr_global) = {\
 ///////////////////////////////////////////////////////////////////////////////////
 
 #if defined (__HAVE_GIANTPLUS_GPM1006D0__)
-#define LCD_HEIGHT 	640
-#define LCD_WIDTH 	480
+#define LCD_WIDTH 	320
+#define LCD_HEIGHT 	240
 #define FRAME_BUF_SIZE (LCD_HEIGHT * LCD_WIDTH * 2)	
 #endif
 
@@ -274,31 +274,52 @@ static void VPOSTDriver_flush(
 	lv_color_t *psColor_p
 )
 {
-	uint8_t *pu8OffScrBufAddr = (uint8_t *)s_pu8NextScrFrameBufAddr;
+	uint8_t *pu8OffScrBufAddr = NULL;
 	
-	VPOST_obj_t *self = (VPOST_obj_t *)psDisp->user_data;
+	mp_obj_t Disp = mp_obj_dict_get(psDisp->user_data, MP_OBJ_NEW_QSTR(MP_QSTR_DISP));
 	
+	VPOST_obj_t *self = (VPOST_obj_t *)Disp;
+	
+	if(self->bOSDMode == false){
+		pu8OffScrBufAddr = (uint8_t *)s_pu8NextScrFrameBufAddr;
+	}
+	else{
+		pu8OffScrBufAddr = (uint8_t *)s_pu8NextScrOSDBufAddr;
+	}
+
+
 	if(self->bFrameDirty == false){
-		if(s_pu8NextScrFrameBufAddr == self->pu8ScreenBuf0)
-			pu8OffScrBufAddr = self->pu8ScreenBuf1;
-		else
-			pu8OffScrBufAddr = self->pu8ScreenBuf0;
-	
-		//Copy on-screen buffer data to off-screen buffer
-		memcpy(pu8OffScrBufAddr, (const void*)s_pu8NextScrFrameBufAddr, FRAME_BUF_SIZE);
+		if(self->bOSDMode == false){
+			if(s_pu8NextScrFrameBufAddr == self->pu8ScreenBuf0)
+				pu8OffScrBufAddr = self->pu8ScreenBuf1;
+			else
+				pu8OffScrBufAddr = self->pu8ScreenBuf0;
+		
+			//Copy on-screen buffer data to off-screen buffer
+			memcpy(pu8OffScrBufAddr, (const void*)s_pu8NextScrFrameBufAddr, FRAME_BUF_SIZE);
+		}
+		else{
+			if(s_pu8NextScrOSDBufAddr == self->pu8ScreenBuf0)
+				pu8OffScrBufAddr = self->pu8ScreenBuf1;
+			else
+				pu8OffScrBufAddr = self->pu8ScreenBuf0;
+		
+			//Copy on-screen buffer data to off-screen buffer
+			memcpy(pu8OffScrBufAddr, (const void*)s_pu8NextScrOSDBufAddr, FRAME_BUF_SIZE);
+		}
 	}
 
 	//draw new pixel data
 	int y;
 	int i32EachCopySize;
 	int i32LineSize;
-	uint8_t *pu8SrcAddr = (uint8_t *)psColor_p;	
+	uint8_t *pu8SrcAddr = (uint8_t *)psColor_p;
 	uint8_t *pu8CopyAddr = pu8OffScrBufAddr + ((psArea->y1 * LCD_WIDTH + psArea->x1) * sizeof(uint16_t));
 
 	i32LineSize = LCD_WIDTH * sizeof(uint16_t);
-	i32EachCopySize = (psArea->x2 - psArea->x1) * sizeof(uint16_t);
+	i32EachCopySize = ((psArea->x2 - psArea->x1) + 1) * sizeof(uint16_t);
 	
-	for(y = psArea->y1; y < psArea->y2; y ++){
+	for(y = psArea->y1; y < (psArea->y2 + 1); y ++){
 		memcpy(pu8CopyAddr, pu8SrcAddr, i32EachCopySize);
 		pu8CopyAddr += i32LineSize;
 		pu8SrcAddr += i32EachCopySize;
@@ -392,7 +413,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(VPOST_init_obj, VPOST_init);
 
 STATIC const mp_rom_map_elem_t VPOST_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&VPOST_init_obj) },
-    { MP_ROM_QSTR(MP_QSTR_flush), MP_ROM_PTR(&PTR_OBJ(VPOSTDriver_Render)) },
+    { MP_ROM_QSTR(MP_QSTR_Render), MP_ROM_PTR(&PTR_OBJ(VPOSTDriver_Render)) },
 
 #if MICROPY_LVGL
     { MP_ROM_QSTR(MP_QSTR_flush), MP_ROM_PTR(&PTR_OBJ(VPOSTDriver_flush)) },
@@ -444,7 +465,6 @@ STATIC mp_obj_t VPOST_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
     }
 
 	self->u32ColorFormat = args[ARG_ColorFormat].u_int;
-
 	return (mp_obj_t)self;
 }
 

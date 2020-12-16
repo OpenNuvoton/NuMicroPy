@@ -76,6 +76,7 @@ static int32_t VCPRecvSignalCB(
 static void ExecuteUsbMSC(void){
 	S_USBDEV_STATE *psUSBDev_msc_state = NULL;
 	uint32_t u32CheckConnTimeOut = 0;
+
 	psUSBDev_msc_state = USBDEV_Init(USBD_VID, USBD_MSC_VCP_PID, eUSBDEV_MODE_MSC_VCP);
 	if(psUSBDev_msc_state == NULL){
 		mp_raise_ValueError("bad USB mode");
@@ -111,8 +112,10 @@ static void ExecuteUsbMSC(void){
 		}
 	}
 	
+		printf("Start USB device -- 1 \n");
 	USBDEV_Deinit(psUSBDev_msc_state);
 
+		printf("Start USB device -- 1 \n");
 	mp_USBRun = false;
 	printf("ExecuteUsbMSC exit \n");
 	vTaskDelete(NULL);
@@ -360,7 +363,6 @@ soft_reset:
 #if MICROPY_PY_THREAD
 
 	//Open MSC and VCP
-
 	if(mpUSBTaskHandle == NULL){
 		mp_USBRun = true;
 		mpUSBTaskHandle = xTaskCreateStatic(mp_usbtask, "USB_MSCVCP",

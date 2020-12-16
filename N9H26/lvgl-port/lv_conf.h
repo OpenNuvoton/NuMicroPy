@@ -17,8 +17,8 @@
 /* Maximal horizontal and vertical resolution to support by the library.*/
 
 #if defined (__HAVE_GIANTPLUS_GPM1006D0__)
-#define LV_HOR_RES_MAX          (640)
-#define LV_VER_RES_MAX          (480)
+#define LV_HOR_RES_MAX          (320)
+#define LV_VER_RES_MAX          (240)
 #endif
 
 /* Color depth:
@@ -486,6 +486,15 @@ typedef void * lv_obj_user_data_t;
 
 /*Be sure every define has a default value*/
 #include "lvgl/src/lv_conf_checker.h"
+
+// Compression not enabled, just make it a no-op.
+
+typedef const char *mp_rom_error_text_t;
+#define MP_COMPRESSED_ROM_TEXT(x) x
+
+// Might add more types of compressed text in the future.
+// For now, forward directly to MP_COMPRESSED_ROM_TEXT.
+#define MP_ERROR_TEXT(x) (mp_rom_error_text_t)MP_COMPRESSED_ROM_TEXT(x)
 
 #endif /*LV_CONF_H*/
 

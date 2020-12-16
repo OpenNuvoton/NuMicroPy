@@ -208,7 +208,7 @@ extern const struct _mp_obj_module_t mp_module_TouchADC;
 
 #if MICROPY_HW_ENABLE_TOUCHADC
 #define TOUCHADC_BUILTIN_MODULE \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_TOUCHADC), (mp_obj_t)&mp_module_TouchADC },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_TouchADC), (mp_obj_t)&mp_module_TouchADC },
 #else
 #define TOUCHADC_BUILTIN_MODULE
 #endif

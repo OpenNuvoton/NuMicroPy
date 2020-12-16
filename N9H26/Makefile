@@ -64,11 +64,11 @@ INC += -I./lib/FreeRTOS/Source/include
 endif
 
 ifeq ($(CROSS), 1)
-CFLAGS_ARM926 = -mcpu=arm926ej-s -mfloat-abi=softfp -fsingle-precision-constant -Wdouble-promotion
+#CFLAGS_ARM926 = -mcpu=arm926ej-s -mfloat-abi=softfp -fsingle-precision-constant -Wdouble-promotion
+CFLAGS_ARM926 = -mcpu=arm926ej-s -mfloat-abi=soft -Wdouble-promotion
 CFLAGS = $(INC) -std=c99 -Wall -Wno-unused-function $(CFLAGS_ARM926) $(CFLAGS_MOD) $(COPT)
 LD = $(CC)
-#LDFLAGS = -nostdlib -T gcc_arm.ld -Wl,-Map=$@.map -Wl,--cref -Wl,--gc-sections -Wl,-no-enum-size-warning --specs=nosys.specs
-LDFLAGS = $(addprefix -T,$(LD_FILES)) $(CFLAGS_ARM926) --specs=nosys.specs --specs=nano.specs -Wl,-Map=$@.map -Wl,--cref -Wl,--gc-sections
+LDFLAGS = $(addprefix -T,$(LD_FILES)) $(CFLAGS_ARM926) --specs=nosys.specs -Wl,-Map=$@.map -Wl,--cref -Wl,--gc-sections
 else
 LD = gcc
 CFLAGS = $(INC) -Wall -Werror -std=c99 $(COPT)
@@ -257,6 +257,7 @@ SRC_LVGL_C += $(addprefix $(LVGL_DIR)/src/,\
 	lv_core/lv_obj.c \
 	lv_core/lv_refr.c \
 	lv_core/lv_style.c \
+	lv_core/lv_debug.c \
 	lv_draw/lv_draw.c \
 	lv_draw/lv_draw_arc.c \
 	lv_draw/lv_draw_basic.c \
@@ -291,6 +292,7 @@ SRC_LVGL_C += $(addprefix $(LVGL_DIR)/src/,\
 	lv_misc/lv_task.c \
 	lv_misc/lv_txt.c \
 	lv_misc/lv_utils.c \
+	lv_misc/lv_printf.c \
 	lv_objx/lv_arc.c \
 	lv_objx/lv_bar.c \
 	lv_objx/lv_btn.c \
@@ -322,6 +324,7 @@ SRC_LVGL_C += $(addprefix $(LVGL_DIR)/src/,\
 	lv_objx/lv_tabview.c \
 	lv_objx/lv_tileview.c \
 	lv_objx/lv_win.c \
+	lv_objx/lv_cpicker.c \
 	lv_themes/lv_theme.c \
 	lv_themes/lv_theme_alien.c \
 	lv_themes/lv_theme_default.c \

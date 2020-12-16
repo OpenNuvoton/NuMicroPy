@@ -605,7 +605,7 @@ VOID sicSdClose_sel(INT cardSel)
         //      because pSD0 could be used within fsUnmountPhysicalDisk().
         if (pDisk_SD0 != NULL)
         {
-            fsUnmountPhysicalDisk(pDisk_SD0);
+            //fsUnmountPhysicalDisk(pDisk_SD0);
             free(pDisk_SD0);
             pDisk_SD0 = NULL;
         }
@@ -620,7 +620,7 @@ VOID sicSdClose_sel(INT cardSel)
         sd1_ok = 0;
         if (pDisk_SD1 != NULL)
         {
-            fsUnmountPhysicalDisk(pDisk_SD1);
+            //fsUnmountPhysicalDisk(pDisk_SD1);
             free(pDisk_SD1);
             pDisk_SD1 = NULL;
         }
@@ -635,7 +635,7 @@ VOID sicSdClose_sel(INT cardSel)
         sd2_ok = 0;
         if (pDisk_SD2 != NULL)
         {
-            fsUnmountPhysicalDisk(pDisk_SD2);
+            //fsUnmountPhysicalDisk(pDisk_SD2);
             free(pDisk_SD2);
             pDisk_SD2 = NULL;
         }

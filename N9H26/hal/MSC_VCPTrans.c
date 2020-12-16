@@ -931,8 +931,10 @@ static void MSCTrans_ReadFormatCapacity_Command(void)
 	
 	psStorIF = s_apsLUNStorIf[CBW_In.CBWD.bCBWLUN];	
 
-	psStorIF->pfnGetInfo(&sStorInfo, NULL);
-	u32TotalSector = sStorInfo.u32DiskSize * (1024 / MSC_SECTOR_SIZE);
+	if(psStorIF->pfnGetInfo(&sStorInfo, NULL) != eSTORIF_ERRNO_NONE)
+		u32TotalSector = 512;	//assign a fake total sector
+	else
+		u32TotalSector = sStorInfo.u32DiskSize * (1024 / MSC_SECTOR_SIZE);
 
     u32TmpVal = s_sMSCDInfo.Mass_Base_Addr;
     for (i = 0 ; i < 36 ; i++)
@@ -965,8 +967,11 @@ static void MSCTrans_ReadCapacity_Command(void)
     uint32_t u32RD;
     uint32_t u32TmpVal;
 
-	psStorIF->pfnGetInfo(&sStorInfo, NULL);
-	u32TotalSector = sStorInfo.u32DiskSize * (1024 / MSC_SECTOR_SIZE);
+	if(psStorIF->pfnGetInfo(&sStorInfo, NULL) != eSTORIF_ERRNO_NONE)
+		u32TotalSector = 512;	//assign a fake total sector
+	else
+		u32TotalSector = sStorInfo.u32DiskSize * (1024 / MSC_SECTOR_SIZE);
+
 	u32TotalSector = u32TotalSector - 1;
 
     u32TmpVal = s_sMSCDInfo.Mass_Base_Addr;
@@ -1125,6 +1130,7 @@ static void MSCTrans_TestUnitReady_Command(void)
 		s_sMSCDInfo.SenseKey = 0x02;
 		s_sMSCDInfo.ASC = 0x3a;
 		s_sMSCDInfo.ASCQ = 0;
+		s_sMSCDInfo.preventflag = 1;
 	}
 }
 
