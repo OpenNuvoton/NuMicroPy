@@ -92,6 +92,7 @@ SRC_C = \
 	gccollect.c \
 	mpthreadport.c \
 	fatfs_port.c \
+	bufhelper.c \
 	misc/FreeRTOSHooks.c \
 	misc/mperror.c \
 	$(BUILD)/_frozen_mpy.c \
@@ -140,6 +141,7 @@ SRC_MODS_C = $(addprefix mods/,\
 	pybirq.c \
 	pin_named_pins.c \
 	networklan.c \
+	pybi2c.c \
 	)
 
 CFLAGS += -D__USBD_STANDARD_MODE__
@@ -168,6 +170,9 @@ SRC_BSP_DRIVER_C = $(addprefix $(N9H26BSP_PATH)/Driver/Source/,\
 	SIC/sd.c \
 	SIC/fmi.c \
 	SIC/sdGlue.c \
+	EDMA/DrvEDMA.c \
+	I2C/DrvI2CH.c \
+	I2C/i2c.c \
 	)
 
 SRC_HAL_C = $(addprefix hal/,\
@@ -183,6 +188,8 @@ SRC_HAL_C = $(addprefix hal/,\
 	N9H26_ISR.c \
 	pin_int.c \
 	N9H26_ETH.c \
+	N9H26_HAL_EDMA.c \
+	N9H26_VideoIn0.c \
 	)
 
 

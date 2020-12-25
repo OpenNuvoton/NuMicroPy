@@ -36,6 +36,7 @@
 #include "pybirq.h"
 #include "pybpin.h"
 #include "pybsdcard.h"
+#include "pybi2c.h"
 
 
 /// \function elapsed_millis(start)
@@ -103,22 +104,16 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_SDCard), MP_ROM_PTR(&pyb_sdcard_type) },
 #endif
 
+#if MICROPY_HW_ENABLE_HW_I2C
+    { MP_ROM_QSTR(MP_QSTR_I2C), MP_ROM_PTR(&pyb_i2c_type) },
+#endif
+
 /*
 	{ MP_ROM_QSTR(MP_QSTR_Timer), MP_ROM_PTR(&pyb_timer_type) },
 	{ MP_ROM_QSTR(MP_QSTR_PWM), MP_ROM_PTR(&pyb_pwm_type) },
 	{ MP_ROM_QSTR(MP_QSTR_WDT), MP_ROM_PTR(&pyb_wdt_type) },
 
-#if MICROPY_HW_ENABLE_USBD
-    { MP_ROM_QSTR(MP_QSTR_usb_mode), MP_ROM_PTR(&pyb_usb_mode_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_USB_HID), MP_ROM_PTR(&pyb_usb_hid_type) },
-	{ MP_ROM_QSTR(MP_QSTR_USB_VCP), MP_ROM_PTR(&pyb_usb_vcp_type) },
-#endif
-    { MP_ROM_QSTR(MP_QSTR_msc_enable), MP_ROM_PTR(&pyb_msc_enable_obj) },
-    { MP_ROM_QSTR(MP_QSTR_msc_disable), MP_ROM_PTR(&pyb_msc_disable_obj) },
 
-#if MICROPY_HW_ENABLE_HW_I2C
-    { MP_ROM_QSTR(MP_QSTR_I2C), MP_ROM_PTR(&pyb_i2c_type) },
-#endif
 #if MICROPY_HW_ENABLE_HW_SPI
 	{ MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&pyb_spi_type) },
 #endif

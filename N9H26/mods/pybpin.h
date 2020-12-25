@@ -45,11 +45,19 @@ typedef struct {
 typedef struct {
   mp_obj_base_t base;
   qstr name;
+#if 0
   uint32_t port   : 4;
   uint32_t pin    : 5;      // Some ARM processors use 32 bits/PORT
   uint32_t num_af : 4;
   uint32_t adc_channel : 5; // Some ARM processors use 32 bits/PORT
   uint32_t adc_num  : 3;    // 1 bit per ADC
+#else
+  uint32_t port;
+  uint32_t pin;      // Some ARM processors use 32 bits/PORT
+  uint32_t num_af;
+  uint32_t adc_channel; // Some ARM processors use 32 bits/PORT
+  uint32_t adc_num;    // 1 bit per ADC
+#endif
   uint32_t pin_mask;
   volatile uint32_t mfp_reg;
 //  volatile uint32_t *mfos_reg;  

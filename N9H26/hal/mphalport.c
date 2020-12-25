@@ -223,3 +223,17 @@ void mp_hal_stdout_tx_str(const char *str) {
     mp_hal_stdout_tx_strn(str, strlen(str));
 }
 
+void mp_hal_pin_config(mp_hal_pin_obj_t pin, uint32_t mode, const pin_af_obj_t *af_obj)
+{
+	pin_set_af(pin, af_obj, mode);
+}
+
+bool mp_hal_pin_config_alt(mp_hal_pin_obj_t pin, uint32_t mode, uint8_t fn, uint8_t unit) {
+    const pin_af_obj_t *af = pin_find_af(pin, fn, unit);
+    if (af == NULL) {
+        return false;
+    }
+    mp_hal_pin_config(pin, mode, af);
+    return true;
+}
+

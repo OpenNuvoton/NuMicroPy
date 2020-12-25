@@ -29,8 +29,8 @@ static xSemaphoreHandle s_tStorIfMutex;
 #define STORIF_MUTEX_UNLOCK()		xSemaphoreGive(s_tStorIfMutex)
 
 #else
-#define STORIF_MUTEX_LOCK
-#define STORIF_MUTEX_UNLOCK
+#define STORIF_MUTEX_LOCK()
+#define STORIF_MUTEX_UNLOCK()
 #endif
 
 static FMI_SD_INFO_T *s_psSDInfo = NULL;

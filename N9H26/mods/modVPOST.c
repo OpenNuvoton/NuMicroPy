@@ -12,6 +12,8 @@
 #include "wblib.h"
 #include "N9H26_VPOST.h"
 
+#include "../hal/N9H26_HAL_EDMA.h"
+
 #if MICROPY_LVGL
 #include "lvgl/lvgl.h"
 #endif
@@ -295,8 +297,8 @@ static void VPOSTDriver_flush(
 			else
 				pu8OffScrBufAddr = self->pu8ScreenBuf0;
 		
-			//Copy on-screen buffer data to off-screen buffer
-			memcpy(pu8OffScrBufAddr, (const void*)s_pu8NextScrFrameBufAddr, FRAME_BUF_SIZE);
+			//Copy on-screen buffer data to off-screen buffer using EDMA
+			nu_edma_memcpy(pu8OffScrBufAddr, (void *)s_pu8NextScrFrameBufAddr, FRAME_BUF_SIZE);
 		}
 		else{
 			if(s_pu8NextScrOSDBufAddr == self->pu8ScreenBuf0)

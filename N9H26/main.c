@@ -30,6 +30,7 @@
 #include "mods/pybsdcard.h"
 #include "hal/pin_int.h"
 #include "hal/N9H26_USBDev.h"
+#include "hal/N9H26_HAL_EDMA.h"
 
 #include "mods/modnetwork.h"
 
@@ -346,6 +347,7 @@ soft_reset:
 	readline_init0();
 	pin_init0();
 	extint_init0();
+	nu_edma_memfun_actor_init();
 
 #if MICROPY_HW_HAS_SPIFLASH
 
@@ -452,6 +454,15 @@ soft_reset:
 
 }
 
+static void dump_clocks(void)
+{
+	printf("******* sysGetSystemClock = %d KHz \n", sysGetSystemClock() / 1000);
+	printf("******* sysGetCPUClock = %d KHz \n", sysGetCPUClock() / 1000);
+	printf("******* sysGetHCLK1Clock = %d KHz \n", sysGetHCLK1Clock() / 1000);
+	printf("******* sysGetAPBClock = %d KHz \n", sysGetAPBClock() / 1000);
+	printf("******* sysGetDramClock = %d KHz \n", sysGetDramClock() / 1000);
+}
+
 int main (void)
 {
 	SetupHardware();
@@ -461,6 +472,7 @@ int main (void)
 	sysprintf("|                     Debug Console                     |\n");	
 	sysprintf("+-------------------------------------------------------+\n");
 
+	dump_clocks();
 #if MICROPY_HW_HAS_SPIFLASH
 	spiflash_init();
 #endif

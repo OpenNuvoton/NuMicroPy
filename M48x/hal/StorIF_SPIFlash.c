@@ -53,6 +53,13 @@ MapSPIFlash(
 			psInfo->u32TotalBlockN = 64;
 			psInfo->u32PageSize = 256;
 		break;		
+		case 0xEF4017:			//W25Q64FV (8MB)
+			psInfo->i32ID = i32FlashID;
+			psInfo->u32BlockSize = 	64 * 1024;
+			psInfo->u32SectorSize = 4 * 1024;
+			psInfo->u32TotalBlockN = 128;
+			psInfo->u32PageSize = 256;
+		break;		
 		case 0xEF4019:			//W25Q256FV (32MB)
 			psInfo->i32ID = i32FlashID;
 			psInfo->u32BlockSize = 	64 * 1024;

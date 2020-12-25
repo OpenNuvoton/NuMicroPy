@@ -11,3 +11,8 @@
 
 //Touch ADC
 #define MICROPY_HW_ENABLE_TOUCHADC	(1)
+
+// I2C busses
+#define MICROPY_HW_I2C0_SCL (pin_B13)
+#define MICROPY_HW_I2C0_SDA (pin_B14)
+

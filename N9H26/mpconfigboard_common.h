@@ -76,15 +76,14 @@
 /*****************************************************************************/
 // General configuration
 
-#if 0 //CHChen: TODO
-
 // Enable hardware I2C if there are any peripherals defined
-#if defined(MICROPY_HW_I2C1_SCL) || defined(MICROPY_HW_I2C2_SCL) \
-    || defined(MICROPY_HW_I2C3_SCL) || defined(MICROPY_HW_I2C4_SCL)
+#if defined(MICROPY_HW_I2C0_SCL)
 #define MICROPY_HW_ENABLE_HW_I2C (1)
 #else
 #define MICROPY_HW_ENABLE_HW_I2C (0)
 #endif
+
+#if 0 //CHChen: TODO
 
 // Enable hardware SPI if there are any peripherals defined
 #if defined(MICROPY_HW_SPI0_SCK) || defined(MICROPY_HW_SPI1_SCK) \

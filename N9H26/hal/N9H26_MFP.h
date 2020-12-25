@@ -378,11 +378,24 @@
 #define SYS_GPB_MFPL_PB0MFP_SD1_DATA1         (0x02UL<<SYS_GPB_MFPL_PB0MFP_Pos)  /*!< 2nd SD DATA1 pin. \hideinitializer */
 #define SYS_GPB_MFPL_PB0MFP_VIN0_CLKO         (0x03UL<<SYS_GPB_MFPL_PB0MFP_Pos)  /*!< 1st VIN sensor SCLKO pin. \hideinitializer */
 
+#define SYS_GPB_MFPL_PB4MFP_GPIO              (0x00UL<<SYS_GPB_MFPL_PB4MFP_Pos)  /*!< General purpose digital I/O pin. \hideinitializer */
+#define SYS_GPB_MFPL_PB4MFP_I2S0_WS    	      (0x01UL<<SYS_GPB_MFPL_PB4MFP_Pos)  /*!< 1st I2S WS pin. \hideinitializer */
+#define SYS_GPB_MFPL_PB4MFP_SD1_DATA3         (0x02UL<<SYS_GPB_MFPL_PB4MFP_Pos)  /*!< 2nd SD data3 pin. \hideinitializer */
+#define SYS_GPB_MFPL_PB4MFP_VIN0_FIELD        (0x03UL<<SYS_GPB_MFPL_PB4MFP_Pos)  /*!< 1st VIN field pin. \hideinitializer */
+
 /********************* Bit definition of GPB_MFPH register **********************/
 
 #define SYS_GPB_MFPH_PB8MFP_GPIO              (0x00UL<<SYS_GPB_MFPH_PB8MFP_Pos)  /*!< General purpose digital I/O pin. \hideinitializer */
 #define SYS_GPB_MFPH_PB8MFP_LCD0_LVDATA19     (0x02UL<<SYS_GPB_MFPH_PB8MFP_Pos)  /*!< 1st LCD LVDATA19 pin. \hideinitializer */
 #define SYS_GPB_MFPH_PB8MFP_VIN0_PDATA3       (0x03UL<<SYS_GPB_MFPH_PB8MFP_Pos)  /*!< 1st VIN sensor SPDATA3 pin. \hideinitializer */
+
+#define SYS_GPB_MFPH_PB13MFP_GPIO              (0x00UL<<SYS_GPB_MFPH_PB13MFP_Pos)  /*!< General purpose digital I/O pin. \hideinitializer */
+#define SYS_GPB_MFPH_PB13MFP_I2C0_SCL          (0x02UL<<SYS_GPB_MFPH_PB13MFP_Pos)  /*!< 1st I2C SCL pin. \hideinitializer */
+//#define SYS_GPB_MFPH_PB13MFP_I2C0_SCL          (0x03UL<<SYS_GPB_MFPH_PB13MFP_Pos)  /*!< 1st I2C SCL pin. \hideinitializer */
+
+#define SYS_GPB_MFPH_PB14MFP_GPIO              (0x00UL<<SYS_GPB_MFPH_PB14MFP_Pos)  /*!< General purpose digital I/O pin. \hideinitializer */
+#define SYS_GPB_MFPH_PB14MFP_I2C0_SDA          (0x02UL<<SYS_GPB_MFPH_PB14MFP_Pos)  /*!< 1st I2C SDA pin. \hideinitializer */
+//#define SYS_GPB_MFPH_PB13MFP_I2C0_SDA          (0x03UL<<SYS_GPB_MFPH_PB14MFP_Pos)  /*!< 1st I2C SDA pin. \hideinitializer */
 
 /********************* Bit definition of GPC_MFPL register **********************/
 
