@@ -289,7 +289,10 @@
 
 #define REG_I2S0	(I2S_BA)
 
-#define REG_PWM0	(RF_BA)
+#define REG_PWM0	(PWM_BA)
+#define REG_PWM1	(PWM_BA)
+#define REG_PWM2	(PWM_BA)
+#define REG_PWM3	(PWM_BA)
 
 #define REG_UART0	(UART_BA)
 
@@ -415,9 +418,42 @@
 
 #define SYS_GPD_MFPL_PD0MFP_GPIO              (0x00UL<<SYS_GPD_MFPL_PD0MFP_Pos)  /*!< General purpose digital I/O pin. \hideinitializer */
 #define SYS_GPD_MFPL_PD0MFP_SPI1_CS1          (0x01UL<<SYS_GPD_MFPL_PD0MFP_Pos)  /*!< 2nd SPI CS1 pin. \hideinitializer */
-#define SYS_GPD_MFPL_PD0MFP_PWM0_CH1          (0x02UL<<SYS_GPD_MFPL_PD0MFP_Pos)  /*!< 1st PWM CH1 pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD0MFP_PWM0_PWM          (0x02UL<<SYS_GPD_MFPL_PD0MFP_Pos)  /*!< 1st PWM pin. \hideinitializer */
 #define SYS_GPD_MFPL_PD0MFP_VIN1_PDATA3       (0x08UL<<SYS_GPD_MFPL_PD0MFP_Pos)  /*!< 2nd vin sensor data3 pin. \hideinitializer */
 #define SYS_GPD_MFPL_PD0MFP_EMAC0_TXEN        (0x0EUL<<SYS_GPD_MFPL_PD0MFP_Pos)  /*!< 1st EMAC TXEN pin. \hideinitializer */
+
+/********************* Bit definition of GPD_MFPL register **********************/
+
+#define SYS_GPD_MFPL_PD1MFP_GPIO              (0x00UL<<SYS_GPD_MFPL_PD1MFP_Pos)  /*!< General purpose digital I/O pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD1MFP_UART0_TXD         (0x01UL<<SYS_GPD_MFPL_PD1MFP_Pos)  /*!< 1st UART TXD pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD1MFP_PWM1_PWM          (0x02UL<<SYS_GPD_MFPL_PD1MFP_Pos)  /*!< 2nd PWM pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD1MFP_VIN1_PDATA2       (0x08UL<<SYS_GPD_MFPL_PD1MFP_Pos)  /*!< 2nd vin sensor data2 pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD1MFP_EMAC0_TXD1        (0x0EUL<<SYS_GPD_MFPL_PD1MFP_Pos)  /*!< 1st EMAC TXD1 pin. \hideinitializer */
+
+/********************* Bit definition of GPD_MFPL register **********************/
+
+#define SYS_GPD_MFPL_PD2MFP_GPIO              (0x00UL<<SYS_GPD_MFPL_PD2MFP_Pos)  /*!< General purpose digital I/O pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD2MFP_UART0_RXD         (0x01UL<<SYS_GPD_MFPL_PD2MFP_Pos)  /*!< 1st UART RXD pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD2MFP_PWM2_PWM          (0x02UL<<SYS_GPD_MFPL_PD2MFP_Pos)  /*!< 3rd PWM pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD2MFP_VIN1_CLKO	      (0x08UL<<SYS_GPD_MFPL_PD2MFP_Pos)  /*!< 2nd vin clock out pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD2MFP_EMAC0_TXD0        (0x0EUL<<SYS_GPD_MFPL_PD2MFP_Pos)  /*!< 1st EMAC TXD0 pin. \hideinitializer */
+
+/********************* Bit definition of GPD_MFPL register **********************/
+
+#define SYS_GPD_MFPL_PD3MFP_GPIO              (0x00UL<<SYS_GPD_MFPL_PD3MFP_Pos)  /*!< General purpose digital I/O pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD3MFP_UART0_CTS         (0x01UL<<SYS_GPD_MFPL_PD3MFP_Pos)  /*!< 1st UART CTS pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD3MFP_PWM3_PWM          (0x02UL<<SYS_GPD_MFPL_PD3MFP_Pos)  /*!< 4th PWM pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD3MFP_VIN1_VSYNC	      (0x08UL<<SYS_GPD_MFPL_PD3MFP_Pos)  /*!< 2nd vin vsync pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD3MFP_UHL0_DP	          (0x0CUL<<SYS_GPD_MFPL_PD3MFP_Pos)  /*!< 1st USB device DP pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD3MFP_EMAC0_MDIO        (0x0EUL<<SYS_GPD_MFPL_PD3MFP_Pos)  /*!< 1st EMAC MDIO pin. \hideinitializer */
+
+/********************* Bit definition of GPD_MFPL register **********************/
+
+#define SYS_GPD_MFPL_PD4MFP_GPIO              (0x00UL<<SYS_GPD_MFPL_PD4MFP_Pos)  /*!< General purpose digital I/O pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD4MFP_UART0_RTS         (0x01UL<<SYS_GPD_MFPL_PD4MFP_Pos)  /*!< 1st UART RTS pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD4MFP_SPI0_CS1          (0x02UL<<SYS_GPD_MFPL_PD4MFP_Pos)  /*!< 1st SPI CS1 pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD4MFP_VIN1_HSYNC	      (0x08UL<<SYS_GPD_MFPL_PD4MFP_Pos)  /*!< 2nd vin hsync pin. \hideinitializer */
+#define SYS_GPD_MFPL_PD4MFP_UHL0_DM	          (0x0CUL<<SYS_GPD_MFPL_PD4MFP_Pos)  /*!< 1st USB device DM pin. \hideinitializer */
 
 /********************* Bit definition of GPD_MFPH register **********************/
 

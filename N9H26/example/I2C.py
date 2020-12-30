@@ -2,7 +2,7 @@ from pyb import Pin
 from pyb import I2C
 
 #Test case
-#Device: NT99141. Must enable pybi2c.c "USE_NT9941_I2C_TEST" option and rebuild firmware
+#Device: NT99141 sensor. Must enable pybi2c.c "USE_NT99141_I2C_TEST" option and rebuild firmware
 
 #Set sensor downdown pin low
 snr_pw = Pin(Pin.board.SENSOR_POWERDOWN, Pin.OUT, pull = Pin.PULL_UP)

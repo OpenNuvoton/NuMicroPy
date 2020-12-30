@@ -83,6 +83,14 @@
 #define MICROPY_HW_ENABLE_HW_I2C (0)
 #endif
 
+// Enable hardware I2C if there are any peripherals defined
+#if defined(MICROPY_HW_UART0_RXD)
+#define MICROPY_HW_ENABLE_HW_UART (1)
+#else
+#define MICROPY_HW_ENABLE_HW_UART (0)
+#endif
+
+
 #if 0 //CHChen: TODO
 
 // Enable hardware SPI if there are any peripherals defined

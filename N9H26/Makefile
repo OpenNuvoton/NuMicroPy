@@ -139,6 +139,7 @@ SRC_MODS_C = $(addprefix mods/,\
 	pybsdcard.c \
 	pybpin.c \
 	pybirq.c \
+	pybuart.c \
 	pin_named_pins.c \
 	networklan.c \
 	pybi2c.c \
@@ -152,6 +153,7 @@ endif
 
 SRC_BSP_DRIVER_C = $(addprefix $(N9H26BSP_PATH)/Driver/Source/,\
 	SYS/wb_uart.c \
+	SYS/wb_huart.c \
 	SYS/wb_cache.c \
 	SYS/wb_aic.c \
 	SYS/wb_mmu.c \

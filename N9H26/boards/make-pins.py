@@ -16,7 +16,7 @@ SUPPORTED_FN = {
     'UART'  : ['RXD', 'RTS', 'TXD', 'CTS'],
     'HUART' : ['RXD', 'RTS', 'TXD', 'CTS'],
     'I2C'   : ['SDA', 'SCL'],
-    'PWM'   : ['CH0', 'CH1', 'CH2', 'CH3'],
+    'PWM'   : ['PWM'],
     'LCD'   : ['LMVSYNC', 'LPCLK', 'LHSYNC', 'LVSYNC', 'LVDEN',
                'LVDATA0', 'LVDATA1', 'LVDATA2', 'LVDATA3', 'LVDATA4', 'LVDATA5', 'LVDATA6', 'LVDATA7', 'LVDATA8', 'LVDATA9', 'LVDAT10', 'LVDATA11',
                'LVDATA12', 'LVDATA13', 'LVDATA14', 'LVDATA15', 'LVDATA16', 'LVDATA17', 'LVDATA18', 'LVDATA19', 'LVDATA20', 'LVDATA21', 'LVDAT22', 'LVDATA23'],

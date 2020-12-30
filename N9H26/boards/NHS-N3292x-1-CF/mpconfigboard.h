@@ -16,3 +16,9 @@
 #define MICROPY_HW_I2C0_SCL (pin_B13)
 #define MICROPY_HW_I2C0_SDA (pin_B14)
 
+//UART
+#define MICROPY_HW_UART0_RXD  (pin_D2) //JTAG TDI
+#define MICROPY_HW_UART0_TXD  (pin_D1) //JTAG TMS
+#define MICROPY_HW_UART0_CTS  (pin_D3) //JTAG TDO
+#define MICROPY_HW_UART0_RTS  (pin_D4) //JTAG TRST
+

@@ -37,6 +37,7 @@
 #include "pybpin.h"
 #include "pybsdcard.h"
 #include "pybi2c.h"
+#include "pybuart.h"
 
 
 /// \function elapsed_millis(start)
@@ -108,6 +109,10 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_I2C), MP_ROM_PTR(&pyb_i2c_type) },
 #endif
 
+#if MICROPY_HW_ENABLE_HW_UART
+   { MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&pyb_uart_type) },
+#endif
+
 /*
 	{ MP_ROM_QSTR(MP_QSTR_Timer), MP_ROM_PTR(&pyb_timer_type) },
 	{ MP_ROM_QSTR(MP_QSTR_PWM), MP_ROM_PTR(&pyb_pwm_type) },
@@ -148,9 +153,8 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_Gyro), MP_ROM_PTR(&pyb_gyro_type) },
     { MP_ROM_QSTR(MP_QSTR_Mag), MP_ROM_PTR(&pyb_mag_type) },
 #endif
-
-   { MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&pyb_uart_type) },
 */
+
 };
 
 STATIC MP_DEFINE_CONST_DICT(pyb_module_globals, pyb_module_globals_table);
