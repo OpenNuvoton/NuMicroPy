@@ -180,6 +180,15 @@ extern const struct _mp_obj_module_t mp_module_VPOST;
 extern const struct _mp_obj_module_t mp_module_lvgl;
 extern const struct _mp_obj_module_t mp_module_TouchADC;
 
+//OpenMV modules
+extern const struct _mp_obj_module_t sensor_module;
+extern const struct _mp_obj_module_t image_module;
+
+//AudioIn module
+extern const struct _mp_obj_module_t mp_module_AudioIn;
+
+//SPU module
+extern const struct _mp_obj_module_t mp_module_SPU;
 
 #if MICROPY_PY_NETWORK
 #define NETWORK_BUILTIN_MODULE              \
@@ -199,11 +208,33 @@ extern const struct _mp_obj_module_t mp_module_TouchADC;
 #define MICROPY_PY_LVGL_DEF 
 #endif
 
+#if MICROPY_OPENMV
+#define OPENMV_PY_MODULE              \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_sensor), (mp_obj_t)&sensor_module }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_image), (mp_obj_t)&image_module },
+#else
+#define OPENMV_PY_MODULE
+#endif
+
 #if MICROPY_HW_ENABLE_VPOST
 #define VPOST_BUILTIN_MODULE \
     { MP_OBJ_NEW_QSTR(MP_QSTR_VPOST), (mp_obj_t)&mp_module_VPOST },
 #else
 #define VPOST_BUILTIN_MODULE
+#endif
+
+#if MICROPY_HW_ENABLE_AUDIOIN
+#define AUDIOIN_BUILTIN_MODULE \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_AudioIn), (mp_obj_t)&mp_module_AudioIn },
+#else
+#define AUDIOIN_BUILTIN_MODULE
+#endif
+
+#if MICROPY_HW_ENABLE_SPU
+#define SPU_BUILTIN_MODULE \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SPU), (mp_obj_t)&mp_module_SPU },
+#else
+#define SPU_BUILTIN_MODULE
 #endif
 
 #if MICROPY_HW_ENABLE_TOUCHADC
@@ -219,9 +250,12 @@ extern const struct _mp_obj_module_t mp_module_TouchADC;
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
     { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
 	VPOST_BUILTIN_MODULE \
+	AUDIOIN_BUILTIN_MODULE \
+	SPU_BUILTIN_MODULE \
 	TOUCHADC_BUILTIN_MODULE \
     NETWORK_BUILTIN_MODULE \
     MICROPY_PY_LVGL_DEF \
+    OPENMV_PY_MODULE \
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
     { MP_ROM_QSTR(MP_QSTR_binascii), MP_ROM_PTR(&mp_module_ubinascii) }, \

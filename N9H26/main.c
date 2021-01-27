@@ -34,13 +34,19 @@
 
 #include "mods/modnetwork.h"
 
+#if MICROPY_OPENMV
+#include "sensor.h"
+#include "framebuffer.h"
+#include "fb_alloc.h"
+#endif
+
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (configMAX_PRIORITIES - 1)
 #define MP_TASK_STACK_SIZE      (4 * 1024)
 #define MP_TASK_STACK_LEN       (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 
 #ifndef MP_TASK_HEAP_SIZE
-#define MP_TASK_HEAP_SIZE	(512 * 1024)
+#define MP_TASK_HEAP_SIZE	(1024 * 1024)
 #endif
 
 //#define _CTRL_D_SOFT_RESET_
@@ -348,6 +354,13 @@ soft_reset:
 	pin_init0();
 	extint_init0();
 	nu_edma_memfun_actor_init();
+
+#if MICROPY_OPENMV
+	framebuffer_init0();
+	sensor_init0();
+	sensor_init();
+	fb_alloc_init0();
+#endif
 
 #if MICROPY_HW_HAS_SPIFLASH
 

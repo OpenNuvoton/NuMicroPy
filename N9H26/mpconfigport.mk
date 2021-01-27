@@ -8,3 +8,6 @@ MICROPY_NVT_LWIP = 1
 
 #LittlevGL binding
 MICROPY_LVGL = 1
+
+#openmv
+MICROPY_OPENMV = 1

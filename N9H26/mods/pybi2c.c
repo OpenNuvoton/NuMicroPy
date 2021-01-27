@@ -102,7 +102,9 @@ STATIC void pyb_i2c_init(pyb_i2c_obj_t *self){
 	outpw(REG_APBIPRST, inpw(REG_APBIPRST) | I2CRST);	//reset i2c
 	outpw(REG_APBIPRST, inpw(REG_APBIPRST) & ~I2CRST);	
 
-	i2cOpen();
+	if(i2cOpen() == I2C_ERR_BUSY)
+        mp_raise_ValueError("Unable open I2C bus: busy");
+	
 	i2cIoctl(I2C_IOC_SET_SPEED, self->u32BaudRate, 0);
 }
 

@@ -67,6 +67,15 @@
 #define MICROPY_HW_HAS_SDCARD (1)
 #endif
 
+// Whether to enable the Audio In, exposed as AudioIn
+#ifndef MICROPY_HW_ENABLE_AUDIOIN
+#define MICROPY_HW_ENABLE_AUDIOIN (1)
+#endif
+
+// Whether to enable the SPU(sound processing unit), exposed as SPU
+#ifndef MICROPY_HW_ENABLE_SPU
+#define MICROPY_HW_ENABLE_SPU (1)
+#endif
 
 // The volume label used when creating the flash filesystem
 #ifndef MICROPY_HW_FLASH_FS_LABEL
@@ -83,13 +92,19 @@
 #define MICROPY_HW_ENABLE_HW_I2C (0)
 #endif
 
-// Enable hardware I2C if there are any peripherals defined
+// Enable hardware UART if there are any peripherals defined
 #if defined(MICROPY_HW_UART0_RXD)
 #define MICROPY_HW_ENABLE_HW_UART (1)
 #else
 #define MICROPY_HW_ENABLE_HW_UART (0)
 #endif
 
+// Enable sensro if there are any peripherals defined
+#if defined(MICROPY_HW_SENSOR_SCL)
+#define MICROPY_PY_SENSOR (1)
+#else
+#define MICROPY_PY_SENSOR (0)
+#endif
 
 #if 0 //CHChen: TODO
 

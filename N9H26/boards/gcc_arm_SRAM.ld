@@ -64,6 +64,12 @@ SECTIONS
     _edata = . ;
     PROVIDE (edata = .);
 
+	.no_init :
+	{
+		*(.no_init)
+	} > RAM
+
+    . = ALIGN(4);    	
     .bss :
     {
         PROVIDE (__bss_start__ = .);

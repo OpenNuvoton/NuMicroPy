@@ -6,3 +6,4 @@ cp -f layer3.c ../M480BSP/ThirdParty/LibMAD/src/layer3.c
 cp -f wblib.h ../N9H26_emWin_NonOS/BSP/Driver/Include/wblib.h
 cp -f sdGlue.c ../N9H26_emWin_NonOS/BSP/Driver/Source/SIC/sdGlue.c
 cp -f fmi.h ../N9H26_emWin_NonOS/BSP/Driver/Source/SIC/fmi.h
+cp -f objarray.c ../micropython/py/objarray.c

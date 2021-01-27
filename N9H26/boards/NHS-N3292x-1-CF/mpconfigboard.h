@@ -22,3 +22,11 @@
 #define MICROPY_HW_UART0_CTS  (pin_D3) //JTAG TDO
 #define MICROPY_HW_UART0_RTS  (pin_D4) //JTAG TRST
 
+//Sensor
+#define MICROPY_HW_SENSOR_SCL 	(pin_B13)
+#define MICROPY_HW_SENSOR_SDA 	(pin_B14)
+#define MICROPY_HW_SENSOR_POWERDOWN (pin_E8)
+#define MICROPY_HW_SENSOR_RESET	 (pin_B4)
+
+//SPU PA pin
+#define MICROPY_HW_SPU_PA	 	(pin_A0)

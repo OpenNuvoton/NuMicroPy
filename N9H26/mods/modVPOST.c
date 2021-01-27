@@ -18,6 +18,10 @@
 #include "lvgl/lvgl.h"
 #endif
 
+#if MICROPY_OPENMV
+#include "py_image.h"
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // A read-only buffer that contains a C pointer
 // Used to communicate function pointers to Micropython bindings
@@ -367,7 +371,6 @@ static void VPOSTDriver_Render(
 {
 	VPOST_obj_t *self = (VPOST_obj_t *)self_in;
 	
-
 	//Update next frame to user frame buffer
 	if(self->bOSDMode == false)
 		s_pu8NextScrFrameBufAddr = pu8FrameBufAddr;
@@ -411,23 +414,35 @@ STATIC mp_obj_t VPOST_init(
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(VPOST_init_obj, VPOST_init);
 
+#if MICROPY_OPENMV
+static mp_obj_t VPOST_render_image(mp_obj_t self_in, mp_obj_t img_obj)
+{
+	VPOST_obj_t *self = (VPOST_obj_t *)self_in;
+	image_t *psImage = py_image_cobj(img_obj);
+	
+	if(psImage)
+	{
+		VPOSTDriver_Render(self, psImage->pixels);
+	}
 
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(VPOST_render_image_obj, VPOST_render_image);
+#endif
 
 STATIC const mp_rom_map_elem_t VPOST_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&VPOST_init_obj) },
-    { MP_ROM_QSTR(MP_QSTR_Render), MP_ROM_PTR(&PTR_OBJ(VPOSTDriver_Render)) },
+    { MP_ROM_QSTR(MP_QSTR_render), MP_ROM_PTR(&PTR_OBJ(VPOSTDriver_Render)) },
 
 #if MICROPY_LVGL
     { MP_ROM_QSTR(MP_QSTR_flush), MP_ROM_PTR(&PTR_OBJ(VPOSTDriver_flush)) },
 #endif
 
-	// class constants
-	{ MP_ROM_QSTR(MP_QSTR_RGB555),	MP_ROM_INT(DRVVPOST_FRAME_RGB555) },
-	{ MP_ROM_QSTR(MP_QSTR_RGB565),	MP_ROM_INT(DRVVPOST_FRAME_RGB565) },
-	{ MP_ROM_QSTR(MP_QSTR_CBYCRY),	MP_ROM_INT(DRVVPOST_FRAME_CBYCRY) },
-    { MP_ROM_QSTR(MP_QSTR_YCBYCR),	MP_ROM_INT(DRVVPOST_FRAME_YCBYCR) },
-	{ MP_ROM_QSTR(MP_QSTR_CRYCBY),	MP_ROM_INT(DRVVPOST_FRAME_CRYCBY) },
-	{ MP_ROM_QSTR(MP_QSTR_YCRYCB),	MP_ROM_INT(DRVVPOST_FRAME_YCRYCB) },
+#if MICROPY_OPENMV
+    { MP_ROM_QSTR(MP_QSTR_render_image), MP_ROM_PTR(&VPOST_render_image_obj) },
+#endif
+
 };
 
 STATIC MP_DEFINE_CONST_DICT(VPOST_locals_dict, VPOST_locals_dict_table);
@@ -446,7 +461,7 @@ STATIC mp_obj_t VPOST_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_OSDLayer, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool=false}},
         { MP_QSTR_OSDColorKey, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1}},
-        { MP_QSTR_OSDColorFormat, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = DRVVPOST_FRAME_RGB565}},
+        { MP_QSTR_ColorFormat, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = DRVVPOST_FRAME_RGB565}},
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -481,6 +496,14 @@ STATIC const mp_rom_map_elem_t VPOST_globals_table[] = {
 
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_VPOST) },
 	{ MP_ROM_QSTR(MP_QSTR_display), (mp_obj_t)&VPOST_type},
+
+	// class constants
+	{ MP_ROM_QSTR(MP_QSTR_RGB555),	MP_ROM_INT(DRVVPOST_FRAME_RGB555) },
+	{ MP_ROM_QSTR(MP_QSTR_RGB565),	MP_ROM_INT(DRVVPOST_FRAME_RGB565) },
+	{ MP_ROM_QSTR(MP_QSTR_CBYCRY),	MP_ROM_INT(DRVVPOST_FRAME_CBYCRY) },
+    { MP_ROM_QSTR(MP_QSTR_YCBYCR),	MP_ROM_INT(DRVVPOST_FRAME_YCBYCR) },
+	{ MP_ROM_QSTR(MP_QSTR_CRYCBY),	MP_ROM_INT(DRVVPOST_FRAME_CRYCBY) },
+	{ MP_ROM_QSTR(MP_QSTR_YCRYCB),	MP_ROM_INT(DRVVPOST_FRAME_YCRYCB) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(VPOST_module_globals, VPOST_globals_table);

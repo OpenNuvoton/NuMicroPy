@@ -116,7 +116,7 @@ static const nu_edma_periph_ctl_t g_nu_edma_peripheral_ctl_pool[ ] =
     { EDMA_SPIMS1_RX, eMemCtl_SrcFix_DstInc, eDRVEDMA_SPIMS1, eDRVEDMA_READ_APB },
     { EDMA_UART0_RX, eMemCtl_SrcFix_DstInc, eDRVEDMA_UART0, eDRVEDMA_READ_APB },
     { EDMA_UART1_RX, eMemCtl_SrcFix_DstInc, eDRVEDMA_UART1, eDRVEDMA_READ_APB },
-    { EDMA_ADC_RX, eMemCtl_SrcInc_DstWrap, eDRVEDMA_ADC, eDRVEDMA_READ_APB },
+    { EDMA_ADC_RX, eMemCtl_SrcFix_DstWrap, eDRVEDMA_ADC, eDRVEDMA_READ_APB },
     { EDMA_RF_CODEC_RX, eMemCtl_SrcFix_DstInc, eDRVEDMA_RF_CODEC, eDRVEDMA_READ_APB },
     { EDMA_RS_CODEC_RX, eMemCtl_SrcFix_DstInc, eDRVEDMA_RS_CODEC, eDRVEDMA_READ_APB },
 };
@@ -178,6 +178,7 @@ void EDMA_HAL_ISR(void)
 			u32ChannEvent = 0;
 			psEdmaChann = &nu_edma_chn_arr[i32ChannID];
 
+
     		if (inp32(REG_PDMA_IER1) & WAR_IE)
 	    		u32IntStatus = inp32(REG_PDMA_ISR1) & (inp32(REG_PDMA_IER1) | 0x0F00);
 	    	else
@@ -210,9 +211,9 @@ void EDMA_HAL_ISR(void)
 		    			else if (u32WraparoundStatus & 0x0400)
 							u32ChannEvent |= NU_PDMA_EVENT_WRA_HALF;
 		    			else  if (u32WraparoundStatus & 0x0800)
-							u32ChannEvent |= eDRVEDMA_WRA_QUARTER_FLAG;
+							u32ChannEvent |= NU_PDMA_EVENT_WRA_QUARTER;
 		    			else		   
-							u32ChannEvent |= eDRVEDMA_WRA_EMPTY_FLAG;
+							u32ChannEvent |= NU_PDMA_EVENT_WRA_EMPTY;
 
 						outp32(REG_PDMA_ISR1,u32WraparoundStatus);				
 	    			}
@@ -266,9 +267,9 @@ void EDMA_HAL_ISR(void)
 		    			else if (u32WraparoundStatus & 0x0400)
 							u32ChannEvent |= NU_PDMA_EVENT_WRA_HALF;
 		    			else  if (u32WraparoundStatus & 0x0800)
-							u32ChannEvent |= eDRVEDMA_WRA_QUARTER_FLAG;
+							u32ChannEvent |= NU_PDMA_EVENT_WRA_QUARTER;
 		    			else		   
-							u32ChannEvent |= eDRVEDMA_WRA_EMPTY_FLAG;
+							u32ChannEvent |= NU_PDMA_EVENT_WRA_EMPTY;
 
 						outp32(REG_PDMA_ISR2,u32WraparoundStatus);		
 	    			}
@@ -322,9 +323,9 @@ void EDMA_HAL_ISR(void)
 		    			else if (u32WraparoundStatus & 0x0400)
 							u32ChannEvent |= NU_PDMA_EVENT_WRA_HALF;
 		    			else  if (u32WraparoundStatus & 0x0800)
-							u32ChannEvent |= eDRVEDMA_WRA_QUARTER_FLAG;
+							u32ChannEvent |= NU_PDMA_EVENT_WRA_QUARTER;
 		    			else		   
-							u32ChannEvent |= eDRVEDMA_WRA_EMPTY_FLAG;
+							u32ChannEvent |= NU_PDMA_EVENT_WRA_EMPTY;
 
 						outp32(REG_PDMA_ISR3,u32WraparoundStatus);				
 	    			}
@@ -378,9 +379,9 @@ void EDMA_HAL_ISR(void)
 		    			else if (u32WraparoundStatus & 0x0400)
 							u32ChannEvent |= NU_PDMA_EVENT_WRA_HALF;
 		    			else  if (u32WraparoundStatus & 0x0800)
-							u32ChannEvent |= eDRVEDMA_WRA_QUARTER_FLAG;
+							u32ChannEvent |= NU_PDMA_EVENT_WRA_QUARTER;
 		    			else		   
-							u32ChannEvent |= eDRVEDMA_WRA_EMPTY_FLAG;
+							u32ChannEvent |= NU_PDMA_EVENT_WRA_EMPTY;
 
 						outp32(REG_PDMA_ISR4,u32WraparoundStatus);					
 	    			}
@@ -454,6 +455,8 @@ static void nu_edma_periph_ctrl_fill(int i32ChannID, int i32CtlPoolIdx)
     nu_edma_chn_t *psEdmaChann = &nu_edma_chn_arr[i32ChannID];
     psEdmaChann->m_spPeripCtl.m_ePeripheralType = g_nu_edma_peripheral_ctl_pool[i32CtlPoolIdx].m_ePeripheralType;
     psEdmaChann->m_spPeripCtl.m_eMemCtl = g_nu_edma_peripheral_ctl_pool[i32CtlPoolIdx].m_eMemCtl;
+    psEdmaChann->m_spPeripCtl.m_eAPBDevice = g_nu_edma_peripheral_ctl_pool[i32CtlPoolIdx].m_eAPBDevice;
+    psEdmaChann->m_spPeripCtl.m_eAPBRW = g_nu_edma_peripheral_ctl_pool[i32CtlPoolIdx].m_eAPBRW;
 }
 
 static void nu_edma_init(void)
@@ -539,8 +542,9 @@ int nu_edma_channel_allocate(E_EDMA_PERIPH_TYPE ePeripType)
 
 	i32PeripCtlIdx = nu_edma_peripheral_set(ePeripType);
 
-	if(i32PeripCtlIdx < 0)
+	if(i32PeripCtlIdx < 0){
 		goto exit_nu_edma_channel_allocate;
+	}
 
 	if(ePeripType == EDMA_MEM)
 	{
@@ -554,7 +558,7 @@ int nu_edma_channel_allocate(E_EDMA_PERIPH_TYPE ePeripType)
 	}
 	else {
 		for(i = 1; i < 5; i ++){
-			if((nu_edma_chn_mask & (1 << 0)) == 0)
+			if((nu_edma_chn_mask & (1 << i)) == 0)
 				break;
 		}
 

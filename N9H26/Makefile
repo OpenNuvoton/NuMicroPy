@@ -42,9 +42,14 @@ LVGL_PP = $(BUILD)/lvgl/lvgl.pp.c
 LVGL_MPY = $(BUILD)/lvgl/lv_mpy.c
 LVGL_MPY_METADATA = $(BUILD)/lvgl/lv_mpy.json
 QSTR_GLOBAL_DEPENDENCIES += $(LVGL_MPY)
-CFLAGS_MOD += -DMP_TASK_HEAP_SIZE=28384 -DMICROPY_LVGL=1 -DENABLE_SPIM -I$(LVGL_INCLUDE)
+CFLAGS_MOD += -DMICROPY_LVGL=1 -DENABLE_SPIM -I$(LVGL_INCLUDE)
 endif
 
+ifeq ($(MICROPY_OPENMV),1)
+OPENMV_DIR = $(THIRD_PARTY_PATH)/openmv/src/omv
+OPENMV_INCLUDE = $(OPENMV_DIR)
+CFLAGS_MOD += -DMICROPY_OPENMV=1 
+endif
 
 ifeq ($(CROSS), 1)
 CROSS_COMPILE = arm-none-eabi-
@@ -68,7 +73,7 @@ ifeq ($(CROSS), 1)
 CFLAGS_ARM926 = -mcpu=arm926ej-s -mfloat-abi=soft -Wdouble-promotion
 CFLAGS = $(INC) -std=c99 -Wall -Wno-unused-function $(CFLAGS_ARM926) $(CFLAGS_MOD) $(COPT)
 LD = $(CC)
-LDFLAGS = $(addprefix -T,$(LD_FILES)) $(CFLAGS_ARM926) --specs=nosys.specs -Wl,-Map=$@.map -Wl,--cref -Wl,--gc-sections
+LDFLAGS = -lm $(addprefix -T,$(LD_FILES)) $(CFLAGS_ARM926) --specs=nosys.specs -Wl,-Map=$@.map -Wl,--cref -Wl,--gc-sections
 else
 LD = gcc
 CFLAGS = $(INC) -Wall -Werror -std=c99 $(COPT)
@@ -134,6 +139,8 @@ SRC_MODS_C = $(addprefix mods/,\
 	modsocket.c \
 	modVPOST.c \
 	modTouchADC.c \
+	modAudioIn.c \
+	modSPU.c \
 	pybrtc.c \
 	pybspiflash.c \
 	pybsdcard.c \
@@ -175,6 +182,9 @@ SRC_BSP_DRIVER_C = $(addprefix $(N9H26BSP_PATH)/Driver/Source/,\
 	EDMA/DrvEDMA.c \
 	I2C/DrvI2CH.c \
 	I2C/i2c.c \
+	AudioRecord/DrvAudioRec.c \
+	SPU/SPU.c \
+	SPU/DrvSPU.c \
 	)
 
 SRC_HAL_C = $(addprefix hal/,\
@@ -192,6 +202,8 @@ SRC_HAL_C = $(addprefix hal/,\
 	N9H26_ETH.c \
 	N9H26_HAL_EDMA.c \
 	N9H26_VideoIn0.c \
+	N9H26_VideoInMgr.c \
+	N9H26_VideoIn1.c \
 	)
 
 
@@ -346,6 +358,70 @@ SRC_LVGL_C += $(addprefix $(LVGL_DIR)/src/,\
 	)
 endif
 
+ifeq ($(MICROPY_OPENMV),1)
+INC += -Iopenmv-port -I$(TOP)/lib/oofatfs -I$(TOP)/py -I$(OPENMV_DIR)/common -I$(OPENMV_DIR)/imlib -I$(OPENMV_DIR)/alloc -I$(OPENMV_DIR)/modules
+
+SRC_OPENMV_C = \
+	openmv-port/modules/py_sensor.c \
+	openmv-port/sensors/NT99141.c \
+	openmv-port/ports/sensor.c \
+	openmv-port/imlib/framebuffer.c \
+	openmv-port/imlib/fmath.c \
+	openmv-port/imlib/arm_common_tables.c \
+	openmv-port/imlib/arm_cos_f32.c \
+	openmv-port/imlib/arm_sin_f32.c \
+	openmv-port/alloc/fb_alloc.c \
+	openmv-port/common/ff_wrapper_ex.c
+
+SRC_OPENMV_C += $(addprefix $(OPENMV_DIR)/,\
+	alloc/xalloc.c \
+	alloc/umm_malloc.c \
+	alloc/unaligned_memcpy.c \
+	common/array.c \
+	common/ff_wrapper.c \
+	imlib/imlib.c \
+	imlib/rainbow_tab.c \
+	imlib/collections.c \
+	imlib/binary.c \
+	imlib/mathop.c \
+	imlib/draw.c \
+	imlib/jpeg.c \
+	imlib/bmp.c \
+	imlib/ppm.c \
+	imlib/hog.c \
+	imlib/edge.c \
+	imlib/orb.c \
+	imlib/agast.c \
+	imlib/rectangle.c \
+	imlib/lbp.c \
+	imlib/eye.c \
+	imlib/phasecorrelation.c \
+	imlib/template.c \
+	imlib/zbar.c \
+	imlib/dmtx.c \
+	imlib/apriltag.c \
+	imlib/qrcode.c \
+	imlib/hough.c \
+	imlib/lsd.c \
+	imlib/blob.c \
+	imlib/stats.c \
+	imlib/filter.c \
+	imlib/clahe.c \
+	imlib/pool.c \
+	imlib/integral.c \
+	imlib/integral_mw.c \
+	imlib/haar.c \
+	imlib/lab_tab.c \
+	imlib/fft.c \
+	imlib/line.c \
+	imlib/fast.c \
+	imlib/font.c \
+	imlib/sincos_tab.c \
+	modules/py_image.c \
+	modules/py_imageio.c \
+	modules/py_helper.c \
+	)
+endif
 
 SRC_O = \
 	$(STARTUP_FILE) \
@@ -372,6 +448,12 @@ endif
 ifeq ($(MICROPY_LVGL),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_LVGL_C:.c=.o))
 endif
+
+ifeq ($(MICROPY_OPENMV),1)
+OBJ += $(addprefix $(BUILD)/, $(SRC_OPENMV_C:.c=.o))
+SRC_QSTR += $(SRC_OPENMV_C)
+endif
+
 
 SRC_QSTR += $(SRC_MODS_C) $(EXTMOD_SRC_C) $(SRC_LIB_C)
 
