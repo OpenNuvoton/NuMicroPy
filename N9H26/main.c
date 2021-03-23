@@ -423,6 +423,10 @@ soft_reset:
     mod_network_init();
 #endif
 
+#if MICROPY_KBD_EXCEPTION
+	mp_hal_set_interrupt_char(-1);
+#endif
+
 	pyexec_file("boot.py");
 	if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
 		pyexec_file("main.py");

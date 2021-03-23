@@ -190,6 +190,12 @@ extern const struct _mp_obj_module_t mp_module_AudioIn;
 //SPU module
 extern const struct _mp_obj_module_t mp_module_SPU;
 
+//Media record module
+extern const struct _mp_obj_module_t mp_module_Record;
+
+//Media play module
+extern const struct _mp_obj_module_t mp_module_Play;
+
 #if MICROPY_PY_NETWORK
 #define NETWORK_BUILTIN_MODULE              \
 	{ MP_ROM_QSTR(MP_QSTR_network), MP_ROM_PTR(&mp_module_network) }, \
@@ -244,6 +250,21 @@ extern const struct _mp_obj_module_t mp_module_SPU;
 #define TOUCHADC_BUILTIN_MODULE
 #endif
 
+#if MICROPY_NVTMEDIA
+	#if (MICROPY_ENABLE_RECORD && MICROPY_ENABLE_PLAY)
+	#define NVTMEDIA_BUILTIN_MODULE \
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_Record), (mp_obj_t)&mp_module_Record }, \
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_Play), (mp_obj_t)&mp_module_Play },
+	#elif MICROPY_ENABLE_RECORD
+	#define NVTMEDIA_BUILTIN_MODULE \
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_Record), (mp_obj_t)&mp_module_Record },
+	#elif MICROPY_ENABLE_PLAY
+		{ MP_OBJ_NEW_QSTR(MP_QSTR_Play), (mp_obj_t)&mp_module_Play },
+	#else
+		#define NVTMEDIA_BUILTIN_MODULE
+	#endif
+#endif
+
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_umachine), (mp_obj_t)&machine_module }, \
     { MP_ROM_QSTR(MP_QSTR_pyb), MP_ROM_PTR(&pyb_module) }, \
@@ -254,8 +275,10 @@ extern const struct _mp_obj_module_t mp_module_SPU;
 	SPU_BUILTIN_MODULE \
 	TOUCHADC_BUILTIN_MODULE \
     NETWORK_BUILTIN_MODULE \
+    NVTMEDIA_BUILTIN_MODULE \
     MICROPY_PY_LVGL_DEF \
     OPENMV_PY_MODULE \
+    
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
     { MP_ROM_QSTR(MP_QSTR_binascii), MP_ROM_PTR(&mp_module_ubinascii) }, \

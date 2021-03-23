@@ -363,7 +363,7 @@ STATIC mp_obj_t pyb_pwm_channel(size_t n_args, const mp_obj_t *pos_args, mp_map_
         { MP_QSTR_mode,                MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_callback,            MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_pin,                 MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
-        { MP_QSTR_pulse_width_percent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_int = 50} },
+        { MP_QSTR_pulse_width_percent, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 50} },
         { MP_QSTR_capture_edge,        MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAPTURE_RISING_LATCH} },
         { MP_QSTR_freq, 		       MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_complementary,	   MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },

@@ -82,6 +82,19 @@
 #define MICROPY_HW_FLASH_FS_LABEL "pybflash"
 #endif
 
+#if defined(MICROPY_NVTMEDIA)
+// Whether to enable media record, exposed as Record
+#ifndef MICROPY_ENABLE_RECORD
+#define MICROPY_ENABLE_RECORD (1)
+#endif
+
+// Whether to enable media play, exposed as Record
+#ifndef MICROPY_ENABLE_PLAY
+#define MICROPY_ENABLE_PLAY (1)
+#endif
+#endif
+
+
 /*****************************************************************************/
 // General configuration
 

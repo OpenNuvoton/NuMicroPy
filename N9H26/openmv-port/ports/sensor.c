@@ -25,6 +25,10 @@
 #include "task.h"
 #include "semphr.h"
 
+#if MICROPY_NVTMEDIA
+#include "NVTMedia.h"
+#endif
+
 #if VIN_CONFIG_PORT0_PLANAR_MAX_FRAME_CNT == 1
     #define __VIN_ONE_SHOT_MODE__
 #endif
@@ -432,7 +436,7 @@ static void VinFrameLoop(
 
             u32NewFPS = (u32Frames) / (u64CalFPSTime / 1000);
 
-            printf("Video_in port %ld, %ld fps \n", psPortOP->u32PortNo, u32NewFPS);
+//            printf("Video_in port %d, %d fps \n", psPortOP->u32PortNo, u32NewFPS);
             u32Frames = 0;
             u64CalFPSStartTime = mp_hal_ticks_ms();
         }
@@ -518,7 +522,7 @@ static int VideoIn_SetColorFormat(
 }
 
 static uint16_t
-NMUtil_GCD(
+Util_GCD(
 	uint16_t m1,
 	uint16_t m2
 )
@@ -534,7 +538,7 @@ NMUtil_GCD(
 	if (m1 % m2 == 0)
 		return m2;
 	else
-		return (NMUtil_GCD(m2, m1 % m2));
+		return (Util_GCD(m2, m1 % m2));
 }
 
 
@@ -566,7 +570,7 @@ static int VideoIn_SetFrameSize(
     uint32_t u32PlanarRatioW;
     uint32_t u32PlanarRatioH;
 
-    u32GCD = NMUtil_GCD(u16PlanarFrameW, u16PlanarFrameH);
+    u32GCD = Util_GCD(u16PlanarFrameW, u16PlanarFrameH);
 
     u32PlanarRatioW = u16PlanarFrameW / u32GCD;
     u32PlanarRatioH = u16PlanarFrameH / u32GCD;
@@ -627,7 +631,8 @@ static void VideoIn_ReadCurPlanarFrame(
 static BOOL
 VideoIn_ReadNextPlanarFrame(
 	S_VIN_PORT_OP   *psPortOP,
-    uint8_t **ppu8FrameData
+    uint8_t **ppu8FrameData,
+    uint64_t *pu64FrameTime
 )
 {
     if (ppu8FrameData == NULL)
@@ -648,6 +653,11 @@ VideoIn_ReadNextPlanarFrame(
 
     psPortOP->u32PlanarEncIdx = psPortOP->u32PlanarProcIdx;
     *ppu8FrameData = psPortOP->apu8PlanarFrameBufPtr[psPortOP->u32PlanarEncIdx];
+#if MICROPY_NVTMEDIA
+	*pu64FrameTime = NMUtil_GetTimeMilliSec();
+#else
+	*pu64FrameTime = mp_hal_ticks_ms();
+#endif
     xSemaphoreGive(psPortOP->tFrameIndexMutex);
 
     return TRUE;
@@ -672,7 +682,8 @@ static void VideoIn_ReadCurPacketFrame(
 static BOOL
 VideoIn_ReadNextPacketFrame(
 	S_VIN_PORT_OP   *psPortOP,
-    uint8_t **ppu8FrameData
+    uint8_t **ppu8FrameData,
+    uint64_t *pu64FrameTime
 )
 {
     if (ppu8FrameData == NULL)
@@ -693,6 +704,13 @@ VideoIn_ReadNextPacketFrame(
 
     psPortOP->u32PacketEncIdx = psPortOP->u32PacketProcIdx;
     *ppu8FrameData = psPortOP->apu8PacketFrameBufPtr[psPortOP->u32PacketEncIdx];
+
+#if MICROPY_NVTMEDIA
+	*pu64FrameTime = NMUtil_GetTimeMilliSec();
+#else
+	*pu64FrameTime = mp_hal_ticks_ms();
+#endif
+
 //	printf("DDDDDDDD VideoIn_ReadNextPacketFrame in %d , %d, %d \n",  psPortOP->u32PacketInIdx,  psPortOP->u32PacketProcIdx,  psPortOP->u32PacketEncIdx);
     xSemaphoreGive(psPortOP->tFrameIndexMutex);
 
@@ -773,7 +791,7 @@ static int32_t VideoIn_StartRun(
     uint32_t u32RatioM;
     uint32_t u32RatioN;
 
-    u32FrameRateGCD = NMUtil_GCD(u16InputFrameRate, u16TargetFrameRate);
+    u32FrameRateGCD = Util_GCD(u16InputFrameRate, u16TargetFrameRate);
     u32RatioM = s_u32InputFrameRate / u32FrameRateGCD;
     u32RatioN = u16TargetFrameRate / u32FrameRateGCD;
 
@@ -1005,7 +1023,7 @@ int sensor_get_id()
     return sensor.chip_id;
 }
 
-bool sensor_is_detected()
+BOOL sensor_is_detected()
 {
     return sensor.detected;
 }
@@ -1044,7 +1062,7 @@ int sensor_set_hmirror(int enable)
     return 0;
 }
 
-bool sensor_get_hmirror()
+BOOL sensor_get_hmirror()
 {
     return sensor.hmirror;
 }
@@ -1067,7 +1085,7 @@ int sensor_set_vflip(int enable)
     return 0;
 }
 
-bool sensor_get_vflip()
+BOOL sensor_get_vflip()
 {
     return sensor.vflip;
 }
@@ -1235,6 +1253,49 @@ int sensor_get_fb(
 	return 0;
 }
 
+BOOL sensor_ReadPlanarImage(
+	sensor_t *sensor,
+	image_t *psPlanarImage,
+	uint64_t *pu64FrameTime
+)
+{
+	if(s_bSensorRun == false){
+		printf("Please run sensor snapshot/skip_frame first \n");
+		return false;
+	}
+
+	if(psPlanarImage == NULL)
+		return false;
+		
+	psPlanarImage->w = resolution[sensor->framesize_planar][0];
+	psPlanarImage->h = resolution[sensor->framesize_planar][1];
+	psPlanarImage->bpp  = g_sPlanarPipeFrame.bpp;
+
+	return VideoIn_ReadNextPlanarFrame(&s_sVinPortOP, &psPlanarImage->pixels, pu64FrameTime);
+}
+
+BOOL sensor_ReadPacketImage(
+	sensor_t *sensor,
+	image_t *psPacketImage,
+	uint64_t *pu64FrameTime
+)
+{
+	if(s_bSensorRun == false){
+		printf("Please run sensor snapshot/skip_frame first \n");
+		return false;
+	}
+
+	if(psPacketImage == NULL)
+		return false;
+		
+	psPacketImage->w = resolution[sensor->framesize_packet][0];
+	psPacketImage->h = resolution[sensor->framesize_packet][1];
+	psPacketImage->bpp  = g_sPacketPipeFrame.bpp;
+
+	return VideoIn_ReadNextPacketFrame(&s_sVinPortOP, &psPacketImage->pixels, pu64FrameTime);
+}
+
+
 // This is the default snapshot function, which can be replaced in sensor_init functions.
 int sensor_snapshot(
 	sensor_t *sensor,
@@ -1246,6 +1307,8 @@ int sensor_snapshot(
 	int i32Ret;
     bool streaming = (streaming_cb != NULL); // Streaming mode.
 	uint32_t u32CurTime;
+
+	uint64_t u64SnapTime;
 
     // In streaming mode the image pointer must be valid.
     if (streaming) {
@@ -1270,8 +1333,8 @@ int sensor_snapshot(
 		printf("start flush image\n");
 		
 		while(i32FlushFrames >= 0){
-			while(VideoIn_ReadNextPlanarFrame(&s_sVinPortOP, &pu8PlanarFrame) == FALSE);
-			while(VideoIn_ReadNextPacketFrame(&s_sVinPortOP, &pu8PacketFrame) == FALSE);			
+			while(VideoIn_ReadNextPlanarFrame(&s_sVinPortOP, &pu8PlanarFrame, &u64SnapTime) == FALSE);
+			while(VideoIn_ReadNextPacketFrame(&s_sVinPortOP, &pu8PacketFrame, &u64SnapTime) == FALSE);			
 			i32FlushFrames --;
 		}
 		
@@ -1297,7 +1360,7 @@ int sensor_snapshot(
 			planar_image->pixels = NULL;
 			u32CurTime = mp_hal_ticks_ms();
 
-			while(VideoIn_ReadNextPlanarFrame(&s_sVinPortOP, &planar_image->pixels) == FALSE)
+			while(VideoIn_ReadNextPlanarFrame(&s_sVinPortOP, &planar_image->pixels, &u64SnapTime) == FALSE)
 			{
 				mp_hal_delay_ms(2);
 				if((mp_hal_ticks_ms() - u32CurTime) > 3000)	//timeout check
@@ -1310,7 +1373,7 @@ int sensor_snapshot(
 			packet_image->pixels = NULL;
 			u32CurTime = mp_hal_ticks_ms();
 
-			while(VideoIn_ReadNextPacketFrame(&s_sVinPortOP, &packet_image->pixels) == FALSE)
+			while(VideoIn_ReadNextPacketFrame(&s_sVinPortOP, &packet_image->pixels, &u64SnapTime) == FALSE)
 			{
 				mp_hal_delay_ms(2);
 				if((mp_hal_ticks_ms() - u32CurTime) > 3000)	//timeout check

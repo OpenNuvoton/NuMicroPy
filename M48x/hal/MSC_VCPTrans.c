@@ -17,6 +17,7 @@
 #include "MSC_VCPTrans.h"
 #include "StorIF.h"
 
+#include "mpconfigboard.h"
 #include "mpconfigboard_common.h"
 
 //EP2 for VCP bulk in and address  0x2

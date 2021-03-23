@@ -545,6 +545,10 @@ soft_reset:
     mod_network_init();
 #endif
 
+#if MICROPY_KBD_EXCEPTION
+	mp_hal_set_interrupt_char(-1);
+#endif
+
 	// initialise peripherals
 	//    machine_pins_init();
 

@@ -6,12 +6,14 @@ AudioIn.init(channels=1, frequency=16000)
 frag_size = SPU.init(channels=1, frequency=16000, volume=70)
 pcm_data=bytearray(frag_size)
 
+#copy audio_in data(from audio in device) to pcm buffer  
 def audioin_cb(ain_data):
 	pcm_data.extend(ain_data)
 
 AudioIn.start_streaming(audioin_cb)
 SPU.start_play(None)
 
+#put pcm data to speaker device
 while True:
 	if(len(pcm_data) > 0):
 		put_len=SPU.put_frame(pcm_data)

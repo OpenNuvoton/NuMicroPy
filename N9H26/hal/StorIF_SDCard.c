@@ -239,7 +239,7 @@ static int32_t SDCard_Read (
 			ret = sicSdRead2(sector, count, (INT32)(buff));
 		}
     }
-
+	sysFlushCache(D_CACHE);
     return ret;
 }
 

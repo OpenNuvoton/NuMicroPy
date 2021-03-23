@@ -11,3 +11,11 @@ MICROPY_LVGL = 1
 
 #openmv
 MICROPY_OPENMV = 1
+
+#POSIX
+MICROPY_POSIX = 1
+
+#NVT media
+ifeq ($(MICROPY_POSIX),1)
+MICROPY_NVTMEDIA = 1
+endif

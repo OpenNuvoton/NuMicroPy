@@ -112,6 +112,7 @@ static mp_obj_t py_sensor_shutdown(mp_obj_t enable) {
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(py_sensor_shutdown_obj,            py_sensor_shutdown);
 
+#if 0
 //Note: It is a function pointer data type. Used by media engine
 int py_sensor_fill(
 	image_t *planar_img,
@@ -122,6 +123,28 @@ int py_sensor_fill(
 }
 
 DEFINE_PTR_OBJ(py_sensor_fill);
+#else
+bool py_sensor_planar_fill(
+	image_t *planar_img,
+	uint64_t *pu64ImgTime
+)
+{
+    return sensor_ReadPlanarImage(&sensor, planar_img, pu64ImgTime);
+}
+
+DEFINE_PTR_OBJ(py_sensor_planar_fill);
+
+bool py_sensor_packet_fill(
+	image_t *packet_img,
+	uint64_t *pu64ImgTime
+)
+{
+    return sensor_ReadPacketImage(&sensor, packet_img, pu64ImgTime);
+}
+
+DEFINE_PTR_OBJ(py_sensor_packet_fill);
+
+#endif
 
 static mp_obj_t py_sensor_snapshot(uint n_args, const mp_obj_t *args, mp_map_t *kw_args)
 {
@@ -444,7 +467,10 @@ STATIC const mp_map_elem_t globals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_reset),               (mp_obj_t)&py_sensor_reset_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_shutdown),            (mp_obj_t)&py_sensor_shutdown_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_snapshot),            (mp_obj_t)&py_sensor_snapshot_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_fill),				MP_ROM_PTR(&PTR_OBJ(py_sensor_fill)) },
+
+    { MP_OBJ_NEW_QSTR(MP_QSTR_planar_fill),			MP_ROM_PTR(&PTR_OBJ(py_sensor_planar_fill)) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_packet_fill),			MP_ROM_PTR(&PTR_OBJ(py_sensor_packet_fill)) },
+
     { MP_OBJ_NEW_QSTR(MP_QSTR_skip_frames),         (mp_obj_t)&py_sensor_skip_frames_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_width),               (mp_obj_t)&py_sensor_width_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_height),              (mp_obj_t)&py_sensor_height_obj },

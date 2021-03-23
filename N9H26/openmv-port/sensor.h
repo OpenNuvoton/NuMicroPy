@@ -197,7 +197,7 @@ int sensor_reset();
 int sensor_get_id();
 
 // Return true if the sensor was detected and initialized.
-bool sensor_is_detected();
+BOOL sensor_is_detected();
 
 // Sleep mode.
 //int sensor_sleep(int enable);
@@ -267,13 +267,13 @@ int sensor_set_brightness(int level);
 int sensor_set_hmirror(int enable);
 
 // Get hmirror status.
-bool sensor_get_hmirror();
+BOOL sensor_get_hmirror();
 
 // Enable/disable the vflip mode.
 int sensor_set_vflip(int enable);
 
 // Get vflip status.
-bool sensor_get_vflip();
+BOOL sensor_get_vflip();
 
 // Enable/disable the transpose mode.
 int sensor_set_transpose(bool enable);
@@ -310,6 +310,18 @@ int sensor_snapshot(sensor_t *sensor, image_t *planar_image, image_t *packet_ima
 
 // Get current frame buffer
 int sensor_get_fb(sensor_t *sensor, image_t *planar_image, image_t *packet_image);
+
+BOOL sensor_ReadPlanarImage(
+	sensor_t *sensor,
+	image_t *psPlanarImage,
+	uint64_t *pu64FrameTime
+);
+
+BOOL sensor_ReadPacketImage(
+	sensor_t *sensor,
+	image_t *psPacketImage,
+	uint64_t *pu64FrameTime
+);
 
 
 #endif /* __SENSOR_H__ */

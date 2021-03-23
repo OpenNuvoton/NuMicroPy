@@ -1,4 +1,12 @@
-//////////////////////////////////////////////////////////////////////////////
+/***************************************************************************//**
+ * @file     modVPOST.c
+ * @brief    VPOST python module function
+ * @version  0.0.1
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2021 Nuvoton Technology Corp. All rights reserved.
+ ******************************************************************************/
+ //////////////////////////////////////////////////////////////////////////////
 // Includes
 //////////////////////////////////////////////////////////////////////////////
 
@@ -482,6 +490,8 @@ STATIC mp_obj_t VPOST_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
     }
 
 	self->u32ColorFormat = args[ARG_ColorFormat].u_int;
+	
+	printf("DDDDDDDD VPOST_make_new object %x \n", self);
 	return (mp_obj_t)self;
 }
 

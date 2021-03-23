@@ -16,6 +16,7 @@
 #include "N9H26_USBDev.h"
 #include "StorIF.h"
 
+#include "mpconfigboard.h"
 #include "mpconfigboard_common.h"
 
 typedef struct{
@@ -451,7 +452,8 @@ static void MSCVCPTrans_ClassReqDataIn(void)
 			}				
 #endif
 
-#if MICROPY_HW_HAS_SDCARD		
+#if 0
+//#if MICROPY_HW_HAS_SDCARD		
 			if(u8MaxLUN < DEF_MAX_LUN){
 				s_apsLUNStorIf[u8MaxLUN] = (S_STORIF_IF *)&g_STORIF_sSDCard;
 				u8MaxLUN ++;

@@ -68,6 +68,13 @@ INC += -I./lib/FreeRTOS
 INC += -I./lib/FreeRTOS/Source/include
 endif
 
+ifeq ($(MICROPY_POSIX),1)
+INC += -I./lib/POSIX_FreeRTOS/include
+INC += -I./lib/POSIX_FreeRTOS/include/private
+INC += -I./lib/POSIX_FreeRTOS/POSIX/include
+INC += -I./lib/POSIX_FreeRTOS/POSIX/include/portable
+endif
+
 ifeq ($(CROSS), 1)
 #CFLAGS_ARM926 = -mcpu=arm926ej-s -mfloat-abi=softfp -fsingle-precision-constant -Wdouble-promotion
 CFLAGS_ARM926 = -mcpu=arm926ej-s -mfloat-abi=soft -Wdouble-promotion
@@ -89,6 +96,12 @@ CFLAGS += -fdata-sections -ffunction-sections
 endif
 
 LIBS =
+
+ifeq ($(MICROPY_NVTMEDIA),1)
+CFLAGS += -DMICROPY_NVTMEDIA=1
+INC += -I./lib/NVTMedia/inc
+LIBS += ./lib/NVTMedia/lib/libNVTMedia.a ./lib/NVTMedia/lib/libN9H26_AACDecoder.a ./lib/NVTMedia/lib/libN9H26_AACEncoder.a ./lib/NVTMedia/lib/libN9H26_H264CodecFreeRTOS.a
+endif
 
 SRC_C = \
 	main.c \
@@ -141,6 +154,8 @@ SRC_MODS_C = $(addprefix mods/,\
 	modTouchADC.c \
 	modAudioIn.c \
 	modSPU.c \
+	modRecord.c \
+	modPlay.c \
 	pybrtc.c \
 	pybspiflash.c \
 	pybsdcard.c \
@@ -185,6 +200,7 @@ SRC_BSP_DRIVER_C = $(addprefix $(N9H26BSP_PATH)/Driver/Source/,\
 	AudioRecord/DrvAudioRec.c \
 	SPU/SPU.c \
 	SPU/DrvSPU.c \
+	AAC/drvaac.c \
 	)
 
 SRC_HAL_C = $(addprefix hal/,\
@@ -224,6 +240,21 @@ SRC_RTOS_PORT_C = $(addprefix lib/FreeRTOS_Port/,\
 	portISR.c \
 	)
 
+endif
+
+ifeq ($(MICROPY_POSIX),1)
+SRC_POSIX_C = $(addprefix lib/POSIX_FreeRTOS/POSIX/source/,\
+	FreeRTOS_POSIX_clock.c \
+	FreeRTOS_POSIX_mqueue.c \
+	FreeRTOS_POSIX_pthread.c \
+	FreeRTOS_POSIX_pthread_cond.c \
+	FreeRTOS_POSIX_pthread_mutex.c \
+	FreeRTOS_POSIX_sched.c \
+	FreeRTOS_POSIX_semaphore.c \
+	FreeRTOS_POSIX_timer.c \
+	FreeRTOS_POSIX_unistd.c \
+	FreeRTOS_POSIX_utils.c \
+	)
 endif
 
 ifeq ($(MICROPY_NVT_LWIP),1)
@@ -423,6 +454,22 @@ SRC_OPENMV_C += $(addprefix $(OPENMV_DIR)/,\
 	)
 endif
 
+ifeq ($(MICROPY_NVTMEDIA),1)
+
+SRC_NVTMEDIA_C += $(addprefix lib/NVTMedia/src/,\
+	SAL/NVTMedia_SAL_FS.c \
+	)
+
+SRC_NVTMEDIA_C += $(addprefix mods/,\
+	Record.c \
+	Record_FileMgr.c \
+	Play.c \
+	)
+
+
+endif
+
+
 SRC_O = \
 	$(STARTUP_FILE) \
 
@@ -441,6 +488,10 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_RTOS_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_RTOS_PORT_C:.c=.o))
 endif
 
+ifeq ($(MICROPY_POSIX),1)
+OBJ += $(addprefix $(BUILD)/, $(SRC_POSIX_C:.c=.o))
+endif
+
 ifeq ($(MICROPY_NVT_LWIP),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_LWIP_C:.c=.o))
 endif
@@ -454,6 +505,9 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_OPENMV_C:.c=.o))
 SRC_QSTR += $(SRC_OPENMV_C)
 endif
 
+ifeq ($(MICROPY_NVTMEDIA),1)
+OBJ += $(addprefix $(BUILD)/, $(SRC_NVTMEDIA_C:.c=.o))
+endif
 
 SRC_QSTR += $(SRC_MODS_C) $(EXTMOD_SRC_C) $(SRC_LIB_C)
 
