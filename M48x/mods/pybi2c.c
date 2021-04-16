@@ -229,7 +229,7 @@ STATIC mp_obj_t pyb_i2c_init_helper(pyb_i2c_obj_t *self, size_t n_args, const mp
         init->OwnAddress = PYB_I2C_MASTER_ADDRESS;
     } else {
 		init->Mode = I2C_MODE_SLAVE;
-        init->OwnAddress = (args[1].u_int << 1) & 0xfe;
+        init->OwnAddress = args[1].u_int;
     }
 
 	init->BaudRate = args[2].u_int;
@@ -238,6 +238,11 @@ STATIC mp_obj_t pyb_i2c_init_helper(pyb_i2c_obj_t *self, size_t n_args, const mp
 	// init the I2C bus
 	pyb_i2c_deinit(self);
 	pyb_i2c_init(self);
+
+	if(init->Mode == I2C_MODE_SLAVE)
+	{
+		I2C_HookIRQHandler(self->i2c, 0, 0);
+	}
 
     return mp_const_none;
 }
@@ -385,7 +390,7 @@ STATIC mp_obj_t pyb_i2c_send(size_t n_args, const mp_obj_t *pos_args, mp_map_t *
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_send,    MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_addr,    MP_ARG_INT, {.u_int = PYB_I2C_MASTER_ADDRESS} },
-        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 5000} },
+        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 10000} },
     };
 
     // parse args
@@ -399,15 +404,23 @@ STATIC mp_obj_t pyb_i2c_send(size_t n_args, const mp_obj_t *pos_args, mp_map_t *
     pyb_buf_get_for_send(args[0].u_obj, &bufinfo, data);
 
 	int32_t send_len = 0;
+	I2C_TRANS_PARAM sTransParam;
+
+	memset(&sTransParam, 0x0, sizeof(I2C_TRANS_PARAM));
+	sTransParam.pu8Data = bufinfo.buf;
+	sTransParam.u32DataLen = bufinfo.len;
+
 	if (in_master_mode(self)) {
         if (args[1].u_int == PYB_I2C_MASTER_ADDRESS) {
             mp_raise_TypeError("addr argument required");
         }
         mp_uint_t i2c_addr = args[1].u_int;
 
-		send_len = I2C_WriteMultiBytes(self->i2c, i2c_addr, bufinfo.buf, bufinfo.len);
+		sTransParam.u8SlaveAddr = i2c_addr;
+//		send_len = I2C_WriteMultiBytes(self->i2c, i2c_addr, bufinfo.buf, bufinfo.len);
+		send_len = I2C_MaterSendRecv(self->i2c, 0, &sTransParam, args[2].u_int);
     } else {
-		mp_raise_TypeError("I2C must be a master");
+		send_len = I2C_SlaveSendRecv(self->i2c, 0, &sTransParam, args[2].u_int);
     }
 
 	if(send_len != bufinfo.len){
@@ -434,7 +447,7 @@ STATIC mp_obj_t pyb_i2c_recv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_recv,    MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_addr,    MP_ARG_INT, {.u_int = PYB_I2C_MASTER_ADDRESS} },
-        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 5000} },
+        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 10000} },
     };
 
     // parse args
@@ -447,15 +460,24 @@ STATIC mp_obj_t pyb_i2c_recv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *
     mp_obj_t o_ret = pyb_buf_get_for_recv(args[0].u_obj, &vstr);
 
 	int32_t i32RecvLen = 0;
+	I2C_TRANS_PARAM sTransParam;
+
+	memset(&sTransParam, 0x0, sizeof(I2C_TRANS_PARAM));
+	sTransParam.pu8Data = (uint8_t*)vstr.buf;
+	sTransParam.u32DataLen = vstr.len;
+
 	if (in_master_mode(self)) {
         if (args[1].u_int == PYB_I2C_MASTER_ADDRESS) {
             mp_raise_TypeError("addr argument required");
         }
+
         mp_uint_t i2c_addr = args[1].u_int;
-	
-		i32RecvLen = I2C_ReadMultiBytes(self->i2c, i2c_addr, (uint8_t*)vstr.buf, vstr.len);
+		
+		sTransParam.u8SlaveAddr = i2c_addr;
+//		i32RecvLen = I2C_ReadMultiBytes(self->i2c, i2c_addr, (uint8_t*)vstr.buf, vstr.len);
+		i32RecvLen = I2C_MaterSendRecv(self->i2c, 1, &sTransParam, args[2].u_int);	
     } else {
-		mp_raise_TypeError("I2C must be a master");
+		i32RecvLen = I2C_SlaveSendRecv(self->i2c, 1, &sTransParam, args[2].u_int);
     }
 
 	if(i32RecvLen == 0){
@@ -488,7 +510,7 @@ STATIC const mp_arg_t pyb_i2c_mem_read_allowed_args[] = {
     { MP_QSTR_data,    MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
     { MP_QSTR_addr,    MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
     { MP_QSTR_memaddr, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
-    { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 5000} },
+    { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 10000} },
     { MP_QSTR_addr_size, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 8} },
 };
 

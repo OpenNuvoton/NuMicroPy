@@ -38,9 +38,10 @@ typedef struct _pyb_rtc_obj_t {
     mp_obj_base_t base;
     bool initialized;
     int32_t i32Calibration;
+    mp_obj_t callback;
 } pyb_rtc_obj_t;
 
-STATIC pyb_rtc_obj_t pyb_rtc_obj = {{&pyb_rtc_type}, false, 0};
+STATIC pyb_rtc_obj_t pyb_rtc_obj = {{&pyb_rtc_type}, false, 0, mp_const_none};
 
 STATIC mp_obj_t pyb_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check arguments
@@ -135,12 +136,65 @@ mp_obj_t pyb_rtc_calibration(size_t n_args, const mp_obj_t *args) {
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pyb_rtc_calibration_obj, 1, 2, pyb_rtc_calibration);
 
+
+// wakeup(None)
+// wakeup(ms, callback=None)
+mp_obj_t pyb_rtc_wakeup(size_t n_args, const mp_obj_t *args) {
+
+	pyb_rtc_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+
+	if (args[1] == mp_const_none) {
+		// disable wakeup
+		RTC_WaitAccessEnable();
+		RTC->TICK = (RTC->TICK & ~RTC_TICK_TICK_Msk);
+
+		/* Disable RTC Tick interrupt */
+		RTC_DisableInt(RTC_INTEN_TICKIEN_Msk);
+		self->callback = mp_const_none;
+	}
+	else {
+		uint32_t u32WakeupTime = mp_obj_get_int(args[1]);
+
+		if(u32WakeupTime > RTC_TICK_1_128_SEC)
+			u32WakeupTime = RTC_TICK_1_128_SEC;
+		
+        if (n_args == 3) {
+            self->callback = args[2];
+        }
+
+		if(self->initialized == false){
+			RTC_Open(NULL);
+			self->initialized = true;
+		}
+
+		RTC_SetTickPeriod(u32WakeupTime);
+		/* Enable RTC Tick interrupt */
+		RTC_EnableInt(RTC_INTEN_TICKIEN_Msk);
+	}
+
+	return mp_const_none;
+}
+
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pyb_rtc_wakeup_obj, 2, 3, pyb_rtc_wakeup);
+
+
 STATIC const mp_rom_map_elem_t pyb_rtc_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_datetime), MP_ROM_PTR(&pyb_rtc_datetime_obj) },
     { MP_ROM_QSTR(MP_QSTR_calibration), MP_ROM_PTR(&pyb_rtc_calibration_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_wakeup), MP_ROM_PTR(&pyb_rtc_wakeup_obj) },
+
+    // class constants
+    { MP_ROM_QSTR(MP_QSTR_WAKEUP_1_SEC), MP_ROM_INT(RTC_TICK_1_SEC) },
+    { MP_ROM_QSTR(MP_QSTR_WAKEUP_1_2_SEC), MP_ROM_INT(RTC_TICK_1_2_SEC) },
+    { MP_ROM_QSTR(MP_QSTR_WAKEUP_1_4_SEC), MP_ROM_INT(RTC_TICK_1_4_SEC) },
+    { MP_ROM_QSTR(MP_QSTR_WAKEUP_1_8_SEC), MP_ROM_INT(RTC_TICK_1_8_SEC) },
+    { MP_ROM_QSTR(MP_QSTR_WAKEUP_1_16_SEC), MP_ROM_INT(RTC_TICK_1_16_SEC) },
+    { MP_ROM_QSTR(MP_QSTR_WAKEUP_1_32_SEC), MP_ROM_INT(RTC_TICK_1_32_SEC) },
+    { MP_ROM_QSTR(MP_QSTR_WAKEUP_1_64_SEC), MP_ROM_INT(RTC_TICK_1_64_SEC) },
+    { MP_ROM_QSTR(MP_QSTR_WAKEUP_1_128_SEC), MP_ROM_INT(RTC_TICK_1_128_SEC) },
+
 #if 0
     { MP_ROM_QSTR(MP_QSTR_info), MP_ROM_PTR(&pyb_rtc_info_obj) },
-    { MP_ROM_QSTR(MP_QSTR_wakeup), MP_ROM_PTR(&pyb_rtc_wakeup_obj) },
 #endif
 };
 STATIC MP_DEFINE_CONST_DICT(pyb_rtc_locals_dict, pyb_rtc_locals_dict_table);
@@ -152,3 +206,54 @@ const mp_obj_type_t pyb_rtc_type = {
     .make_new = pyb_rtc_make_new,
     .locals_dict = (mp_obj_dict_t*)&pyb_rtc_locals_dict,
 };
+
+
+STATIC void rtc_handle_tick_irq(pyb_rtc_obj_t *self, mp_obj_t callback) {
+
+	// execute callback if it's set
+	if (callback != mp_const_none) {
+#if  MICROPY_PY_THREAD
+		mp_sched_lock();
+#else
+		// When executing code within a handler we must lock the GC to prevent
+		// any memory allocations.  We must also catch any exceptions.
+		gc_lock();
+#endif
+		nlr_buf_t nlr;
+		if (nlr_push(&nlr) == 0) {
+			mp_call_function_0(callback);
+			nlr_pop();
+		} else {
+			// Uncaught exception; disable the callback so it doesn't run again.
+			self->callback = mp_const_none;
+			RTC_DisableInt(RTC_INTEN_TICKIEN_Msk);
+			printf("uncaught exception in RTC tick interrupt handler\n");
+			mp_obj_print_exception(&mp_plat_print, (mp_obj_t)nlr.ret_val);
+		}
+#if  MICROPY_PY_THREAD
+		mp_sched_unlock();
+#else
+		gc_unlock();
+#endif
+	}
+}
+
+/**
+ * @brief       IRQ Handler for RTC Interrupt
+ *
+ * @param       None
+ *
+ * @return      None
+ *
+ * @details     The RTC_IRQHandler is default IRQ of RTC, declared in startup_M2351.s.
+ */
+void RTC_IRQHandler(void)
+{
+    /* To check if RTC alarm interrupt occurred */
+    if(RTC_GET_TICK_INT_FLAG() == 1)
+    {
+        /* Clear RTC alarm interrupt flag */
+        RTC_CLEAR_TICK_INT_FLAG();
+		rtc_handle_tick_irq(&pyb_rtc_obj, pyb_rtc_obj.callback);
+    }
+}

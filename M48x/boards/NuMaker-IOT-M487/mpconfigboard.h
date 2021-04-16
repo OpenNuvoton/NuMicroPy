@@ -121,3 +121,5 @@
 #define MICROPY_NAU88L25_JK_EN			(pin_E13)
 #define MICROPY_NAU88L25_JK_DET			(pin_C13)
 
+//Power wakeup 
+#define MICROPY_HW_POWER_STANDBY_WAKEUP	(pin_A0)

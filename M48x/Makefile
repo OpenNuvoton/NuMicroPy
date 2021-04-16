@@ -167,6 +167,7 @@ SRC_MODS_C = $(addprefix mods/,\
 	modTouchADC.c \
 	machAUDIO.c \
 	MediumQueue.c \
+	power_manager.c \
 	)
 
 SRC_O = \

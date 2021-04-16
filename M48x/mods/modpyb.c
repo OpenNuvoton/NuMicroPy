@@ -49,6 +49,7 @@
 #include "pybwdt.h"
 #include "pybaccel.h"
 #include "rng.h"
+#include "power_manager.h"
 
 /// \function elapsed_millis(start)
 /// Returns the number of milliseconds which have elapsed since `start`.
@@ -85,24 +86,33 @@ STATIC mp_obj_t pyb_elapsed_micros(mp_obj_t start) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(pyb_elapsed_micros_obj, pyb_elapsed_micros);
 
 
+STATIC mp_obj_t pyb_power_stop(void) {
+	PowerManager_EnterNormalPowerDown();
+	return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(pyb_power_stop_obj, pyb_power_stop);
+
+STATIC mp_obj_t pyb_power_standby(void) {
+	PowerManager_EnterStandbyPowerDown();
+	return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(pyb_power_standby_obj, pyb_power_standby);
+
 STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_pyb) },
 
-#if MICROPY_HW_HAS_SDCARD
-	{ MP_ROM_QSTR(MP_QSTR_SDCard), MP_ROM_PTR(&pyb_sdcard_type) },
-#endif
-
-	// Pin
-	{ MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&pin_type) },
-
 	//IRQ
-    { MP_ROM_QSTR(MP_QSTR_wfi), MP_ROM_PTR(&pyb_wfi_obj) },
     { MP_ROM_QSTR(MP_QSTR_disable_irq), MP_ROM_PTR(&pyb_disable_irq_obj) },
     { MP_ROM_QSTR(MP_QSTR_enable_irq), MP_ROM_PTR(&pyb_enable_irq_obj) },
     #if IRQ_ENABLE_STATS
     { MP_ROM_QSTR(MP_QSTR_irq_stats), MP_ROM_PTR(&pyb_irq_stats_obj) },
     #endif
 
+	// Power related
+    { MP_ROM_QSTR(MP_QSTR_wfi), MP_ROM_PTR(&pyb_wfi_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&pyb_power_stop_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_standby), MP_ROM_PTR(&pyb_power_standby_obj) },
+	
 	//Time related
 	{ MP_ROM_QSTR(MP_QSTR_millis), MP_ROM_PTR(&mp_utime_ticks_ms_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_elapsed_millis), MP_ROM_PTR(&pyb_elapsed_millis_obj) },
@@ -111,9 +121,15 @@ STATIC const mp_rom_map_elem_t pyb_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_delay), MP_ROM_PTR(&mp_utime_sleep_ms_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_udelay), MP_ROM_PTR(&mp_utime_sleep_us_obj) },
 
+	//Classes
 	{ MP_ROM_QSTR(MP_QSTR_Timer), MP_ROM_PTR(&pyb_timer_type) },
 	{ MP_ROM_QSTR(MP_QSTR_PWM), MP_ROM_PTR(&pyb_pwm_type) },
 	{ MP_ROM_QSTR(MP_QSTR_WDT), MP_ROM_PTR(&pyb_wdt_type) },
+	{ MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&pin_type) },
+
+#if MICROPY_HW_HAS_SDCARD
+	{ MP_ROM_QSTR(MP_QSTR_SDCard), MP_ROM_PTR(&pyb_sdcard_type) },
+#endif
 
 #if MICROPY_HW_ENABLE_USBD
     { MP_ROM_QSTR(MP_QSTR_usb_mode), MP_ROM_PTR(&pyb_usb_mode_obj) },
