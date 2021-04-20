@@ -170,6 +170,11 @@ mp_obj_t pyb_rtc_wakeup(size_t n_args, const mp_obj_t *args) {
 		RTC_SetTickPeriod(u32WakeupTime);
 		/* Enable RTC Tick interrupt */
 		RTC_EnableInt(RTC_INTEN_TICKIEN_Msk);
+
+		if(self->callback != mp_const_none){
+			/* Enable RTC NVIC */
+			NVIC_EnableIRQ(RTC_IRQn);
+		}
 	}
 
 	return mp_const_none;

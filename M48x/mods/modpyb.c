@@ -93,6 +93,7 @@ STATIC mp_obj_t pyb_power_stop(void) {
 MP_DEFINE_CONST_FUN_OBJ_0(pyb_power_stop_obj, pyb_power_stop);
 
 STATIC mp_obj_t pyb_power_standby(void) {
+	printf("DDDD pyb_power_standby \n");
 	PowerManager_EnterStandbyPowerDown();
 	return mp_const_none;
 }

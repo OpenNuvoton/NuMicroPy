@@ -45,27 +45,47 @@
 /*---------------------------------------------------------------------------------------------------------*/
 static void WakeUpPinFunction()
 {
-	pin_obj_t *wakeup_pin;
+
+	const pin_obj_t *wakeup_pin;
 	
 	wakeup_pin = MICROPY_HW_POWER_STANDBY_WAKEUP;
+
+	GPIO_SetPullCtl(wakeup_pin->gpio, wakeup_pin->pin_mask, GPIO_PUSEL_PULL_UP);
 
     /* Configure wakeup pin as Input mode */
 	mp_hal_pin_config(wakeup_pin, GPIO_MODE_INPUT, 0);
 
     // GPIO SPD GPA0 Power-down Wake-up Pin Select and Debounce Disable
-    CLK_EnableSPDWKPin(wakeup_pin->port, wakeup_pin->pin, CLK_SPDWKPIN_RISING | CLK_SPDWKPIN_FALLING, CLK_SPDWKPIN_DEBOUNCEDIS);
+    CLK_EnableSPDWKPin(wakeup_pin->port, wakeup_pin->pin, CLK_SPDWKPIN_RISING, CLK_SPDWKPIN_DEBOUNCEDIS);
+
 }
+
 
 void PowerManager_EnterStandbyPowerDown(void)
 {
+#if MICROPY_PY_THREAD
+	vTaskSuspendAll();
+#endif
+	__disable_irq();
+	
+    /* Unlock protected registers */
+    SYS_UnlockReg();
+
+    /* Set IO State and all IPs clock disable for power consumption */
+    CLK->APBCLK1 = 0x00000000;
+    CLK->APBCLK0 = 0x00000000;
+
+    /* Clear all wake-up flag */
+    CLK->PMUSTS |= CLK_PMUSTS_CLRWK_Msk;
+
+   /* Select Power-down mode */
+    CLK_SetPowerDownMode(CLK_PMUCTL_PDMSEL_SPD0);
+
 	WakeUpPinFunction();
 	
     /* Enable RTC wake-up */
     CLK_ENABLE_RTCWK();
-
-    /* Select Power-down mode */
-    CLK_SetPowerDownMode(CLK_PMUCTL_PDMSEL_SPD0);
-
+	
     /* Enter to Power-down mode */
     CLK_PowerDown();
 
@@ -75,9 +95,28 @@ void PowerManager_EnterStandbyPowerDown(void)
 
 void PowerManager_EnterNormalPowerDown(void)
 {
+	USBD_SET_SE0();
+
+#if MICROPY_PY_THREAD
+	vTaskSuspendAll();
+#endif
+
+	__disable_irq();
+
+    /* Unlock protected registers */
+    SYS_UnlockReg();
+
    /* Select Power-down mode */
     CLK_SetPowerDownMode(CLK_PMUCTL_PDMSEL_PD);
 
     /* Enter to Power-down mode */
     CLK_PowerDown();
+
+	__enable_irq();
+
+#if MICROPY_PY_THREAD
+	xTaskResumeAll();
+#endif
+
+	USBD_CLR_SE0();
 }

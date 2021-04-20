@@ -98,8 +98,9 @@ void extint_register_pin(const pin_obj_t *pin, uint32_t mode, bool hard_irq, mp_
 	if (*cb != mp_const_none) {
 		pyb_extint_callback_arg[line] = MP_OBJ_FROM_PTR(pin);
 
-		gpioint_enable(pin, mode);
+//		gpioint_enable(pin, mode);
 	}
+		gpioint_enable(pin, mode);
 
 }
 

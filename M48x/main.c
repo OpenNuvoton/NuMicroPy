@@ -602,6 +602,9 @@ int main (void)
 	/* Unlock protected registers */
 	SYS_UnlockReg();
 
+    /* Release I/O hold status */
+    CLK->IOPDCTL = 1;                                                   
+
 	/* Init System, IP clock and multi-function I/O */
 	SYS_Init();
 
