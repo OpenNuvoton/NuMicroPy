@@ -725,14 +725,14 @@ STATIC volatile float adc_refcor = 1.0f;
 
 float eadc_read_core_temp_float(EADC_T *adcHandle) {
     int32_t raw_value = eadc_config_and_read_channel(adcHandle, EADC_CHANNEL_TEMPSENSOR);
-
+	float temp;
     // constants assume 12-bit resolution so we scale the raw value to 12-bits
     //raw_value <<= (12 - adc_get_resolution(adcHandle));
 
     //float core_temp_avg_slope = (*ADC_CAL2 - *ADC_CAL1) / 80.0;
     //return (((float)raw_value * adc_refcor - *ADC_CAL1) / core_temp_avg_slope) + 30.0f;
-    
-    return (float)raw_value; //Cannot get transform function, just return raw data.
+    temp = 25+(((float)raw_value/4095*3300)-675)/(-1.83);
+    return (float)temp;
 }
 
 float eadc_read_core_vbat(EADC_T *adcHandle) {
