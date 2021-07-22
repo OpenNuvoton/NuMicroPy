@@ -1,23 +1,19 @@
 from pyb import PWM
 from pyb import Pin
 
-#connect A1 and D9 board pin
+from pyb import PWM
+from pyb import Pin
 
 def capture_cb(chan, reason):
 	if reason == PWM.RISING:
-		print('rising edge')
+		print("rising", chan.capture(PWM.RISING))
 	elif reason == PWM.FALLING:
-		print('falling edge')
+		print('falling', chan.capture(PWM.FALLING))
 	else:
 		print('both edge')
 
-#BPWM
-bpwm1 = PWM(1, freq = 2)
-#EPWM
-epwm0 = PWM(0, PWM.EPWM, freq = 8)
+bpwm1 = PWM(1, freq = 1000)
+epwm0 = PWM(0, PWM.EPWM, freq = 1000000)
 
-#board pin A1, CPU pin B7
-bpwm1ch4 = bpwm1.channel(mode = PWM.OUTPUT, pulse_width_percent = 50, pin = Pin.board.A1)
-
-#board pin D9, CPU pin A4
-epwm0ch1 = epwm0.channel(mode = PWM.CAPTURE, capture_edge = PWM.RISING, pin = Pin.board.D9, callback = capture_cb)
+bpwm1ch4 = bpwm1.channel(mode = PWM.OUTPUT, pulse_width_percent = 25, pin = Pin.board.A1)
+epwm0ch1 = epwm0.channel(mode = PWM.CAPTURE, capture_edge = PWM.RISING_FALLING, pin = Pin.board.D9, callback = capture_cb)

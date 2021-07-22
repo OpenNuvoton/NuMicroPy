@@ -118,6 +118,9 @@ STATIC uint32_t EPWMCalNewDutyCMR(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t
     return (u32DutyCycle * (EPWM_GET_CNR(epwm, u32ChannelNum) + 1) / u32CycleResolution);
 }
 
+#define EPWM_SET_CHANNEL_COUNTER_TYPE(epwm, u32ChannelNum, u32CounterType)	(epwm)->CTL1 = ((epwm)->CTL1 & ~((11UL << EPWM_CTL1_CNTTYPE0_Pos) << (u32ChannelNum << 1U))) | (u32CounterType << (u32ChannelNum << 1U));
+#define BPWM_SET_CHANNEL_COUNTER_TYPE(pwm, u32CounterType)					(pwm)->CTL1 = ((pwm)->CTL1 & ~((11UL << BPWM_CTL1_CNTTYPE0_Pos))) | (u32CounterType);
+
 STATIC mp_obj_t pyb_pwm_channel_cb(mp_obj_t self_in, mp_obj_t callback) {
     pyb_pwm_channel_obj_t *self = self_in;
 
@@ -479,10 +482,12 @@ STATIC mp_obj_t pyb_pwm_channel(size_t n_args, const mp_obj_t *pos_args, mp_map_
 		if(bIsBPWM){
 			/* set BPWM0/1 channel 0~5 capture configuration */
 			BPWM_ConfigCaptureChannel(self->bpwm, chann_num, 1000000000 / self->freq, 0);		
+			BPWM_SET_CHANNEL_COUNTER_TYPE(self->bpwm, BPWM_UP_COUNTER);
 		}
 		else{
 			/* set EPWM0/1 channel 0~5 capture configuration */
 			EPWM_ConfigCaptureChannel(self->epwm, chann_num, 1000000000 / self->freq, 0);		
+			EPWM_SET_CHANNEL_COUNTER_TYPE(self->epwm, chann_num, EPWM_UP_COUNTER);
 		}
 
 		chann->capture_edge = args[4].u_int;
@@ -496,11 +501,13 @@ STATIC mp_obj_t pyb_pwm_channel(size_t n_args, const mp_obj_t *pos_args, mp_map_
 			/* Enable Capture Function for BPWM0/1 channel 0~5 */
 			BPWM_EnableCapture(self->bpwm, 1 << chann_num);
 
+#if 0
 			/* Enable edge capture reload */
 			if(chann->capture_edge & CAPTURE_RISING_LATCH)
 				self->bpwm->CAPCTL |= (1 << (BPWM_CAPCTL_RCRLDEN0_Pos + chann_num));
 			if(chann->capture_edge & CAPTURE_FALLING_LATCH)
 				self->bpwm->CAPCTL |= (1 << (BPWM_CAPCTL_FCRLDEN0_Pos + chann_num));
+#endif
 		}
 		else{
 			/* Enable Timer for EPWM0/1 channel 0~5 */
@@ -509,11 +516,14 @@ STATIC mp_obj_t pyb_pwm_channel(size_t n_args, const mp_obj_t *pos_args, mp_map_
 			/* Enable Capture Function for EPWM0/1 channel 0~5 */
 			EPWM_EnableCapture(self->epwm, 1 << chann_num);
 
+#if 0
 			/* Enable edge capture reload */
 			if(chann->capture_edge & CAPTURE_RISING_LATCH)
 				self->epwm->CAPCTL |= (1 << (EPWM_CAPCTL_RCRLDEN0_Pos + chann_num));
 			if(chann->capture_edge & CAPTURE_FALLING_LATCH)
 				self->epwm->CAPCTL |= (1 << (EPWM_CAPCTL_FCRLDEN0_Pos + chann_num));
+#endif
+
 //			printf("capture ctrl %x \n", self->pwm->CAPCTL);
 //			printf("capture interrupt enable %x \n", self->pwm->CAPIEN);
 		}

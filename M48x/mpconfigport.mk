@@ -4,7 +4,7 @@
 MICROPY_PY_THREAD = 1
 
 #LittlevGL binding
-MICROPY_LVGL = 1
+MICROPY_LVGL = 0
 
 ifeq ($(MICROPY_PY_THREAD),1)
 # socket module using lwip. depend on MICROPY_PY_THREAD

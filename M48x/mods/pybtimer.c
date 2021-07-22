@@ -173,7 +173,6 @@ STATIC mp_obj_t pyb_timer_channel_callback(mp_obj_t self_in, mp_obj_t callback) 
 			TPWM_START_COUNTER(self->timer->timer);
 		}
 		else if (self->mode == CHANNEL_MODE_IC){
-			TIMER_EnableInt(self->timer->timer);
 			TIMER_EnableCaptureInt(self->timer->timer);
 			NVIC_EnableIRQ(self->timer->irqn);
 			TIMER_Start(self->timer->timer);
@@ -519,6 +518,9 @@ STATIC mp_obj_t pyb_timer_channel(size_t n_args, const mp_obj_t *pos_args, mp_ma
 
 	if(TIMER_IS_ACTIVE(self->timer)){
 		TIMER_Stop(self->timer);
+		while(TIMER_IS_ACTIVE(self->timer));
+		TIMER_ClearIntFlag(self->timer);
+		TIMER_ClearCaptureIntFlag(self->timer);
 	}
 
     switch (chan->mode) {
@@ -563,10 +565,18 @@ STATIC mp_obj_t pyb_timer_channel(size_t n_args, const mp_obj_t *pos_args, mp_ma
 		case CHANNEL_MODE_IC:
 		{
 			/* Enable Timer2 event counter input and external capture function */
-			TIMER_Open(self->timer, TIMER_CONTINUOUS_MODE, 1);
-			TIMER_SET_PRESCALE_VALUE(self->timer, 0);
+			uint32_t u32Prescale =  TIMER_GetModuleClock(self->timer) / self->freq;
+			
+			if((u32Prescale == 0) || (u32Prescale > 256))
+			{
+				mp_raise_ValueError("timer capture frequence over range");
+			}
+			
+			u32Prescale = u32Prescale - 1;
+
+			TIMER_SET_PRESCALE_VALUE(self->timer, u32Prescale);
 			TIMER_SET_CMP_VALUE(self->timer, 0xFFFFFF);
-			TIMER_EnableEventCounter(self->timer, args[4].u_int);
+
 			TIMER_EnableCapture(self->timer, TIMER_CAPTURE_FREE_COUNTING_MODE, args[4].u_int);
 
             if (chan->callback == mp_const_none) {
@@ -700,20 +710,6 @@ STATIC const mp_rom_map_elem_t pyb_timer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_prescaler), MP_ROM_PTR(&pyb_timer_prescaler_obj) },
 
 
-#if 0
-
-    { MP_ROM_QSTR(MP_QSTR_UP), MP_ROM_INT(TIM_COUNTERMODE_UP) },
-    { MP_ROM_QSTR(MP_QSTR_DOWN), MP_ROM_INT(TIM_COUNTERMODE_DOWN) },
-    { MP_ROM_QSTR(MP_QSTR_CENTER), MP_ROM_INT(TIM_COUNTERMODE_CENTERALIGNED1) },
-    { MP_ROM_QSTR(MP_QSTR_PWM_INVERTED), MP_ROM_INT(CHANNEL_MODE_PWM_INVERTED) },
-    { MP_ROM_QSTR(MP_QSTR_OC_TIMING), MP_ROM_INT(CHANNEL_MODE_OC_TIMING) },
-    { MP_ROM_QSTR(MP_QSTR_OC_ACTIVE), MP_ROM_INT(CHANNEL_MODE_OC_ACTIVE) },
-    { MP_ROM_QSTR(MP_QSTR_OC_INACTIVE), MP_ROM_INT(CHANNEL_MODE_OC_INACTIVE) },
-    { MP_ROM_QSTR(MP_QSTR_OC_FORCED_ACTIVE), MP_ROM_INT(CHANNEL_MODE_OC_FORCED_ACTIVE) },
-    { MP_ROM_QSTR(MP_QSTR_OC_FORCED_INACTIVE), MP_ROM_INT(CHANNEL_MODE_OC_FORCED_INACTIVE) },
-    { MP_ROM_QSTR(MP_QSTR_HIGH), MP_ROM_INT(TIM_OCPOLARITY_HIGH) },
-    { MP_ROM_QSTR(MP_QSTR_LOW), MP_ROM_INT(TIM_OCPOLARITY_LOW) },
-#endif
 };
 STATIC MP_DEFINE_CONST_DICT(pyb_timer_locals_dict, pyb_timer_locals_dict_table);
 
@@ -817,7 +813,7 @@ STATIC const mp_obj_type_t pyb_timer_channel_type = {
 };
 
 
-STATIC void timer_handle_irq_channel(pyb_timer_obj_t *self, uint32_t status, mp_obj_t callback) {
+STATIC void timer_handle_irq(pyb_timer_obj_t *self, uint32_t status, mp_obj_t callback) {
 
     if (status) {
 		// execute callback if it's set
@@ -850,6 +846,38 @@ STATIC void timer_handle_irq_channel(pyb_timer_obj_t *self, uint32_t status, mp_
 }
 
 
+STATIC void timer_handle_irq_channel(pyb_timer_channel_obj_t *self, uint32_t status, mp_obj_t callback) {
+
+    if (status) {
+		// execute callback if it's set
+		if (callback != mp_const_none) {
+#if  MICROPY_PY_THREAD
+			mp_sched_lock();
+#else
+			// When executing code within a handler we must lock the GC to prevent
+			// any memory allocations.  We must also catch any exceptions.
+			gc_lock();
+#endif
+			nlr_buf_t nlr;
+			if (nlr_push(&nlr) == 0) {
+				mp_call_function_1(callback, self);
+				nlr_pop();
+			} else {
+				// Uncaught exception; disable the callback so it doesn't run again.
+				self->callback = mp_const_none;
+				TIMER_DisableInt(self->timer->timer);
+				printf("uncaught exception in Timer interrupt handler\n");
+				mp_obj_print_exception(&mp_plat_print, (mp_obj_t)nlr.ret_val);
+			}
+#if  MICROPY_PY_THREAD
+			mp_sched_unlock();
+#else
+			gc_unlock();
+#endif
+		}
+    }
+}
+
 
 void Handle_TMR_Irq(
 	int32_t i32TmrID,
@@ -863,12 +891,13 @@ void Handle_TMR_Irq(
 		return;
 	}
 
-	timer_handle_irq_channel(self, u32Status, self->callback);
+	timer_handle_irq(self, u32Status, self->callback);
 	
 	// Check to see if a timer channel interrupt was pending
 	pyb_timer_channel_obj_t *chan = self->channel;
 	while (chan != NULL) {
-		timer_handle_irq_channel(self, u32Status, chan->callback);
+
+		timer_handle_irq_channel(chan, u32Status, chan->callback);
 		chan = chan->next;
 	}
 }
