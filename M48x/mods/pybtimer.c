@@ -441,7 +441,7 @@ STATIC mp_obj_t pyb_timer_channel(size_t n_args, const mp_obj_t *pos_args, mp_ma
         { MP_QSTR_mode,                MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_callback,            MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_pin,                 MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
-        { MP_QSTR_pulse_width_percent, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_int = 50} },
+        { MP_QSTR_pulse_width_percent, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 50} },
         { MP_QSTR_polarity,            MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0xffffffff} },
     };
     
@@ -532,9 +532,10 @@ STATIC mp_obj_t pyb_timer_channel(size_t n_args, const mp_obj_t *pos_args, mp_ma
 			TPWM_ENABLE_INDEPENDENT_MODE(self->timer);
 
 			chan->duty = args[3].u_int;
+			
 			TPWM_ConfigOutputFreqAndDuty(self->timer, self->freq, chan->duty);
 			/* Set PWM down count type */
-			TPWM_SET_COUNTER_TYPE(self->timer, TPWM_DOWN_COUNT);
+			TPWM_SET_COUNTER_TYPE(self->timer, TPWM_UP_COUNT);
 			
 			if(af->type == AF_PIN_TYPE_TMR_TMR){
 				TPWM_ENABLE_OUTPUT(self->timer, TPWM_CH0);

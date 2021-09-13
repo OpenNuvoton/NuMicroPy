@@ -380,6 +380,10 @@ STATIC mp_obj_t pin_obj_init_helper(const pin_obj_t *self, size_t n_args, const 
 	// configure the GPIO as requested
 	pin_set_af(self, af_obj, mode);
 
+	if(mode == GPIO_MODE_OPEN_DRAIN)
+	{
+		pin_set_pull(self, pull);
+	}
 
     return mp_const_none;
 }

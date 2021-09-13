@@ -42,6 +42,27 @@ uint32_t pin_get_pull(const pin_obj_t *pin) {
     return (pin->gpio->PUSEL >> (pin->pin * 2)) & 3;
 }
 
+
+// Set the pin pullup/pulldown. The mode should
+// be one of GPIO_PUSEL_DISABLE, GPIO_PUSEL_PULL_UP, or GPIO_PUSEL_PULL_DOWN.
+
+void pin_set_pull(const pin_obj_t *pin, uint32_t mode) {
+	
+	uint32_t u32PullPinMask;
+	uint32_t u32PuselValue;
+
+	u32PullPinMask = 0x3 << (pin->pin * 2);
+	mode = (mode & 0x3) << (pin->pin * 2);
+
+	u32PuselValue = pin->gpio->PUSEL;
+	
+	u32PuselValue &= ~(u32PullPinMask);
+	u32PuselValue |= mode;
+
+	pin->gpio->PUSEL = u32PuselValue;
+}
+
+
 // Returns the af (alternate function) value currently set for a pin.
 uint32_t pin_get_af(const pin_obj_t *pin) {
 	uint32_t u32RegVal;

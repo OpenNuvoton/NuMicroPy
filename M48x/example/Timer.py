@@ -9,8 +9,8 @@ def tick(timer):
 	print(timer.counter())
 
 #tim = Timer(3, freq = 2, callback = tick)
-tim = Timer(3, freq = 2)
-tim.callback(tick)
+tim = Timer(3, freq = 2000)
+#tim.callback(tick)
 
 #PWM test
 chan = tim.channel(Timer.PWM, pin = Pin.board.D0, pulse_width_percent = 20)
