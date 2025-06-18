@@ -1,0 +1,5 @@
+MCU_SERIES = M55M1
+CMSIS_MCU = M55M1
+SYS_CLOCK = 200000000
+AF_FILE = boards/m55m1_af.csv
+LD_FILES = boards/m55m1.ld
