@@ -1,0 +1,23 @@
+1. Packages Requirement
+	The following packages will need to be installed before you can compile and run MicroPython
+
+	git
+	python3-pip
+	To install these packages using the following command.
+
+	#sudo apt-get install build-essential libreadline-dev libffi-dev git pkg-config python3-pip
+	#pip3 install gitpython
+	#pip3 install rich
+
+2. Install GNU Arm Toolchain
+	Download GNU Arm toolchain linux 64-bit version(arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi.tar.xz)from Arm Developer. Next use the tar command to extract the file to your favor directory (ex. /usr/local)
+
+	#mv  arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi.tar.xz /usr/local/  
+	#cd /usr/local  
+	#tar -xvf arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi.tar.xz
+
+	Now, modify your PATH environment variable to access the bin directory of toolchain. Edit ~/.profile
+		PATH="/usr/local/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin:$PATH"
+
+3. Download micropython and BSP source
+	#python3 download_src.py --board NuMaker-M55M1
