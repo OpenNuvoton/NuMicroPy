@@ -28,6 +28,6 @@ while True:
 	pin_value = btn1.value()
 	if pin_value == 0:
 		print('Button press')
-		time.sleep_ms(1000)
+	time.sleep_ms(1000)
 
 print('demo done')
